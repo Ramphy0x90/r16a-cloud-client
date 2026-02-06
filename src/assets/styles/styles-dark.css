@@ -1,0 +1,9 @@
+.dark-theme {
+	--colour-primary: #10b981;
+	--colour-background: #0a0a0b;
+	--colour-foreground: #fafafa;
+	--colour-card: #18181b;
+	--colour-card-hover: #27272a;
+	--colour-accent: #27272a;
+	--colour-accent-foreground: #fafafa;
+}

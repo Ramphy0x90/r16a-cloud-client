@@ -1,0 +1,28 @@
+* {
+	box-sizing: border-box;
+	transition: all 122ms linear;
+}
+
+html,
+body {
+	margin: 0 !important;
+	height: 100% !important;
+	font-family: sans-serif;
+	scroll-behavior: smooth;
+
+	background-color: var(--colour-background);
+	color: var(--colour-foreground);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+}
+
+ul {
+	list-style: none;
+}

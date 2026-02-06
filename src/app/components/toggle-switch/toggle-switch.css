@@ -1,0 +1,39 @@
+.toggle-switch-container {
+	--switch-ball-size: 22px;
+	--switch-width: calc(var(--switch-ball-size) * 2.2);
+	--switch-padding: 2px;
+}
+
+.toggle-switch-container .switch {
+	position: relative;
+	display: inline-block;
+	width: var(--switch-width);
+	height: calc(var(--switch-ball-size) + (var(--switch-padding) * 2));
+	cursor: pointer;
+	background-color: var(--colour-accent);
+	border-radius: var(--switch-ball-size);
+}
+
+.toggle-switch-container .switch::after {
+	content: '';
+	position: absolute;
+	width: var(--switch-ball-size);
+	height: var(--switch-ball-size);
+	border-radius: var(--switch-ball-size);
+	background-color: var(--colour-background);
+	top: var(--switch-padding);
+}
+
+.toggle-switch-container .offscreen {
+	visibility: hidden;
+}
+
+.toggle-switch-container input[type='checkbox']:checked + .switch::after {
+	transform: translateX(
+		calc(var(--switch-width) - var(--switch-ball-size) - var(--switch-padding))
+	);
+}
+
+.toggle-switch-container input[type='checkbox']:checked + .switch {
+	background-color: var(--colour-primary);
+}

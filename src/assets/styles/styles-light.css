@@ -1,0 +1,9 @@
+.light-theme {
+	--colour-primary: #10b981;
+	--colour-background: #ffffff;
+	--colour-foreground: #18181b;
+	--colour-card: #f4f4f5;
+	--colour-card-hover: #e4e4e7;
+	--colour-accent: #f4f4f5;
+	--colour-accent-foreground: #18181b;
+}

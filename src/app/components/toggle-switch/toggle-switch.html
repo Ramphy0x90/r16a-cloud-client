@@ -1,0 +1,10 @@
+<div class="toggle-switch-container">
+	<input
+		id="toggle"
+		type="checkbox"
+		class="offscreen"
+		[ngModel]="value"
+		(ngModelChange)="toggle()"
+	/>
+	<label for="toggle" class="switch"></label>
+</div>

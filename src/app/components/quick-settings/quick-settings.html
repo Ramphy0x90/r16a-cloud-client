@@ -1,0 +1,19 @@
+<div class="quick-settings-container">
+	<button class="quick-settings-toggle" (click)="toggleSettingsMenu()">
+		<i class="bi bi-gear"></i>
+	</button>
+
+	@if (isSettingsMenuVisible) {
+		<ul class="settings-menu">
+			<li class="menu-option">
+				<label class="switch">
+					<toggle-switch
+						[ngModel]="currentThemeBoolean$ | async"
+						(ngModelChange)="toggleTheme($event)"
+					>
+					</toggle-switch>
+				</label>
+			</li>
+		</ul>
+	}
+</div>
