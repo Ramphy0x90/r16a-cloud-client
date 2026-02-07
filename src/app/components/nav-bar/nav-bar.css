@@ -14,7 +14,7 @@
 }
 
 .nav-option .nav-option-label {
-	font-size: clamp(0.8rem, 2vw, 1rem);
+	font-size: clamp(0.8rem, 2vw, 0.96rem);
 }
 
 /* Medium devices (tablets, 768px and up) */
