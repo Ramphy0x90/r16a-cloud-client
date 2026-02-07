@@ -5,7 +5,15 @@
 
 	@if (isSettingsMenuVisible) {
 		<ul class="settings-menu">
-			<li class="menu-option">
+			<li class="menu-option theme">
+				<span>
+					@if (currentThemeBoolean$ | async) {
+						Light theme
+					} @else {
+						Dark theme
+					}
+				</span>
+
 				<label class="switch">
 					<toggle-switch
 						[ngModel]="currentThemeBoolean$ | async"
