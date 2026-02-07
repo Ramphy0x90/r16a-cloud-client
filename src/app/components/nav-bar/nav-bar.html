@@ -1,1 +1,13 @@
-<p>nav-bar works!</p>
+<nav class="nav-bar-container">
+	@for (option of navOptions; track option.path) {
+		<a [routerLink]="option.path" [routerLinkActive]="'active'" class="nav-option">
+			<div class="nav-option-icon">
+				<i class="bi" [ngClass]="option.icon"></i>
+			</div>
+
+			<div class="nav-option-label">
+				{{ option.label }}
+			</div>
+		</a>
+	}
+</nav>
