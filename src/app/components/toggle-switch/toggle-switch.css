@@ -1,5 +1,5 @@
 .toggle-switch-container {
-	--switch-ball-size: 22px;
+	--switch-ball-size: 20px;
 	--switch-width: calc(var(--switch-ball-size) * 2.2);
 	--switch-padding: 2px;
 }
@@ -22,6 +22,7 @@
 	border-radius: var(--switch-ball-size);
 	background-color: var(--colour-background);
 	top: var(--switch-padding);
+	left: 0;
 }
 
 .toggle-switch-container .offscreen {
@@ -29,9 +30,7 @@
 }
 
 .toggle-switch-container input[type='checkbox']:checked + .switch::after {
-	transform: translateX(
-		calc(var(--switch-width) - var(--switch-ball-size) - var(--switch-padding))
-	);
+	transform: translateX(calc(var(--switch-width) - var(--switch-ball-size)));
 }
 
 .toggle-switch-container input[type='checkbox']:checked + .switch {

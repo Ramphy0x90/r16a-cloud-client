@@ -1,4 +1,11 @@
 * {
+	--space-1: 5px;
+	--space-2: 10px;
+	--space-3: 15px;
+	--space-4: 30px;
+
+	--radius: 8px;
+
 	box-sizing: border-box;
 	transition: all 122ms linear;
 }
@@ -12,6 +19,7 @@ body {
 
 	background-color: var(--colour-background);
 	color: var(--colour-foreground);
+	font-size: clamp(0.95rem, 2vw, 1rem);
 }
 
 h1,
@@ -25,4 +33,22 @@ h6 {
 
 ul {
 	list-style: none;
+	margin: 0;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	background-color: var(--colour-card);
+	border: none;
+	border-radius: var(--radius);
+	cursor: pointer;
+	color: var(--colour-foreground);
+}
+
+i {
+	font-size: clamp(1.3rem, 2vw, 1.5rem);
 }

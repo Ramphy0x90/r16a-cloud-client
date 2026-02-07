@@ -1,6 +1,10 @@
 <div class="root-container">
-	<nav-bar></nav-bar>
-	<quick-settings></quick-settings>
+	<div class="pages-render-space">
+		<app-header></app-header>
+		<router-outlet />
+	</div>
 
-	<router-outlet />
+	<div class="nav-bar-render-space">
+		<nav-bar></nav-bar>
+	</div>
 </div>

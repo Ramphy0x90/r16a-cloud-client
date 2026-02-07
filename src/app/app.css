@@ -1,2 +1,37 @@
 .root-container {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100%;
+}
+
+.pages-render-space {
+	width: 100%;
+	padding: var(--space-3);
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+	.root-container {
+		flex-direction: row-reverse;
+	}
+
+	.nav-bar-render-space {
+		width: 300px;
+	}
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+	.nav-bar-render-space {
+		width: 350px;
+	}
+}
+
+/* X-Large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+}
+
+/* XX-Large devices (larger desktops, 1400px and up) */
+@media (min-width: 1400px) {
 }
