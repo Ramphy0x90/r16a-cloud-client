@@ -3,13 +3,18 @@ import { DashboardPage } from './pages/dashboard/dashboard';
 import { FilesPage } from './pages/files/files';
 import { SharedPage } from './pages/shared/shared';
 import { ProfilePage } from './pages/profile/profile';
+import { CallbackPage } from './pages/callback/callback';
+import { LoginPage } from './pages/login/login';
+import { authGuard } from './guards/auth.guard';
 import { NavBarItem } from './types/nav-bar-item';
 
 export const enum ROUTES {
+	LOGIN = 'login',
 	DASHBOARD = 'dashboard',
 	FILES = 'files',
 	SHARED = 'shared',
 	PROFILE = 'profile',
+	CALLBACK = 'callback',
 }
 
 export const NAV_BAR_ROUTES: readonly NavBarItem[] = [
@@ -39,9 +44,11 @@ export const NAV_BAR_ROUTES: readonly NavBarItem[] = [
 ];
 
 export const routes: Routes = [
+	{ path: ROUTES.LOGIN, component: LoginPage },
+	{ path: ROUTES.CALLBACK, component: CallbackPage },
 	{ path: '', pathMatch: 'full', redirectTo: ROUTES.DASHBOARD },
-	{ path: ROUTES.DASHBOARD, component: DashboardPage },
-	{ path: ROUTES.FILES, component: FilesPage },
-	{ path: ROUTES.SHARED, component: SharedPage },
-	{ path: ROUTES.PROFILE, component: ProfilePage },
+	{ path: ROUTES.DASHBOARD, component: DashboardPage, canActivate: [authGuard] },
+	{ path: ROUTES.FILES, component: FilesPage, canActivate: [authGuard] },
+	{ path: ROUTES.SHARED, component: SharedPage, canActivate: [authGuard] },
+	{ path: ROUTES.PROFILE, component: ProfilePage, canActivate: [authGuard] },
 ];

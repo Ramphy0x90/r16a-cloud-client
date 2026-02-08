@@ -42,11 +42,12 @@ a {
 }
 
 button {
-	background-color: var(--colour-card);
 	border: none;
 	border-radius: var(--radius);
 	cursor: pointer;
 	color: var(--colour-foreground);
+	background-color: transparent;
+	padding: var(--space-1);
 }
 
 i {

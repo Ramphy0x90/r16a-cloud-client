@@ -25,13 +25,14 @@
 		text-align: left;
 		border-top: none;
 		background-color: var(--colour-card);
+		box-shadow: 10px 0px 8px -8px rgba(0, 0, 0, 0.1);
 	}
 
 	.nav-option {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		gap: var(--space-2);
+		gap: var(--space-3);
 		padding: var(--space-2) var(--space-3);
 		border-radius: var(--radius);
 	}

@@ -4,7 +4,9 @@
 		<router-outlet />
 	</div>
 
-	<div class="nav-bar-render-space">
-		<nav-bar></nav-bar>
-	</div>
+	@if (isAuthenticated$ | async) {
+		<div class="nav-bar-render-space">
+			<nav-bar></nav-bar>
+		</div>
+	}
 </div>

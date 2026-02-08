@@ -4,10 +4,6 @@
 	position: relative;
 }
 
-.quick-settings-toggle {
-	padding: var(--space-2);
-}
-
 .settings-menu {
 	position: absolute;
 	width: var(--settings-menu-size);

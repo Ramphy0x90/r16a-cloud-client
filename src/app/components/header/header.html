@@ -2,6 +2,22 @@
 	<div class="identity-container">R16a-Cloud</div>
 
 	<div class="actions-container">
-		<quick-settings></quick-settings>
+		<div class="action">
+			<quick-settings></quick-settings>
+		</div>
+
+		@if (isAuthenticated$ | async) {
+			<div class="action">
+				<button class="logout-btn" (click)="logout()" title="Sign out">
+					<i class="bi bi-box-arrow-right"></i>
+				</button>
+			</div>
+
+			<div class="action">
+				<div class="profile-button">
+					{{ userInitials$ | async }}
+				</div>
+			</div>
+		}
 	</div>
 </header>
