@@ -10,14 +10,14 @@ import { map, Observable } from 'rxjs';
 	templateUrl: './header.html',
 	styleUrl: './header.css',
 })
-export class Header implements OnInit {
+export class Header {
 	private readonly aauthService = inject(AuthService);
 
 	readonly isAuthenticated$: Observable<boolean> = this.aauthService.isAuthenticated$;
-	readonly userData$: Observable<Record<string, any> | null> = this.aauthService.userData$;
+	readonly userData$: Observable<Record<string, any>> = this.aauthService.userData$;
 	readonly userInitials$: Observable<string> = this.userData$.pipe(
 		map((user) => {
-			const tokens = user?.['name'].trim().split(/\s+/);
+			const tokens = user?.['name'].trim().split(/\s+/) || '';
 
 			if (tokens.length === 0) return '';
 			if (tokens.length === 1) return tokens[0][0].toUpperCase();
@@ -28,10 +28,6 @@ export class Header implements OnInit {
 			return (firstInitial + lastInitial).toUpperCase();
 		}),
 	);
-
-	ngOnInit(): void {
-		this.aauthService.checkAuth().subscribe();
-	}
 
 	logout(): void {
 		this.aauthService.logout();

@@ -19,6 +19,7 @@
 	align-items: center;
 	border-radius: 100%;
 	padding: var(--space-2);
+	border: 1px solid var(--colour-primary);
 }
 
 .actions-container {
