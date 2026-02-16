@@ -1,4 +1,8 @@
 <nav class="nav-bar-container">
+	<div class="identity-container">
+		<span>R16a Cloud</span>
+	</div>
+
 	@for (option of navOptions; track option.path) {
 		<a [routerLink]="option.path" [routerLinkActive]="'active'" class="nav-option">
 			<div class="nav-option-icon">
