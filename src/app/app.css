@@ -11,8 +11,17 @@
 	padding: var(--space-3);
 }
 
+.nav-bar-render-space {
+	padding: var(--space-3);
+}
+
 ::ng-deep .page {
 	height: 90%;
+	padding: var(--space-4) 0;
+}
+
+::ng-deep i.bi-folder-fill {
+	color: var(--colour-folder);
 }
 
 /* Medium devices (tablets, 768px and up) */
@@ -23,6 +32,7 @@
 
 	.nav-bar-render-space {
 		width: 300px;
+		padding: 0;
 	}
 }
 
