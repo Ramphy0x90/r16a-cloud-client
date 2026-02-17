@@ -1,4 +1,4 @@
-<div class="root-container">
+<div class="root-container" [class.bg]="!(isAuthenticated$ | async)">
 	<div class="pages-render-space">
 		<app-header></app-header>
 		<router-outlet />

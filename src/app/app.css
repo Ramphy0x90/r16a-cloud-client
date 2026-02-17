@@ -5,6 +5,11 @@
 	height: 100%;
 }
 
+.root-container.bg {
+	background-image: url('/assets/imgs/bg-0.svg');
+	background-position: center;
+}
+
 .pages-render-space {
 	width: 100%;
 	height: 100%;

@@ -21,12 +21,6 @@
 
 .identity-container {
 	display: none;
-	font-size: 18px;
-	font-family: 'Sixtyfour', sans-serif;
-	background: linear-gradient(to top, var(--colour-primary), var(--colour-foreground));
-	-webkit-background-clip: text;
-	background-clip: text;
-	-webkit-text-fill-color: transparent;
 }
 
 /* Medium devices (tablets, 768px and up) */
