@@ -1,0 +1,86 @@
+.file-options-container {
+	position: relative;
+}
+
+.options-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius);
+	color: var(--colour-foreground);
+	font-size: 1.1rem;
+}
+
+.options-toggle:hover,
+.options-toggle.active {
+	background-color: var(--colour-card-hover);
+}
+
+.options-menu {
+	position: absolute;
+	right: 0;
+	top: 100%;
+	margin-top: var(--space-1);
+	background-color: var(--colour-card);
+	border-radius: var(--radius);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	min-width: 180px;
+	padding: var(--space-1);
+	z-index: 100;
+}
+
+.menu-section {
+	display: flex;
+	flex-direction: column;
+}
+
+.menu-label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	opacity: 0.5;
+	padding: var(--space-1) var(--space-2);
+	letter-spacing: 0.05em;
+}
+
+.menu-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-1) var(--space-2);
+	border: none;
+	background: none;
+	cursor: pointer;
+	border-radius: calc(var(--radius) / 2);
+	color: var(--colour-foreground);
+	font-size: 0.85rem;
+	width: 100%;
+	text-align: left;
+}
+
+.menu-item i {
+	font-size: 1rem;
+}
+
+.menu-item:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.menu-item.active {
+	color: var(--colour-primary);
+}
+
+.menu-item .check {
+	margin-left: auto;
+	font-size: 0.75rem;
+}
+
+.menu-divider {
+	border: none;
+	border-top: 1px solid var(--colour-accent);
+	margin: var(--space-1) 0;
+}

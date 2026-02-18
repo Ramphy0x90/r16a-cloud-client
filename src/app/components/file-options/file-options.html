@@ -1,0 +1,80 @@
+<div class="file-options-container">
+	<button class="options-toggle" (click)="toggleMenu()" [class.active]="isMenuOpen">
+		<i class="bi bi-three-dots"></i>
+	</button>
+
+	@if (isMenuOpen) {
+		<div class="options-menu">
+			<button class="menu-item" (click)="toggleSelectionMode()">
+				<i class="bi" [ngClass]="selectionMode ? 'bi-x-square' : 'bi-check2-square'"></i>
+				<span>{{ selectionMode ? 'Cancel selection' : 'Select' }}</span>
+			</button>
+
+			<hr class="menu-divider" />
+
+			<div class="menu-section">
+				<span class="menu-label">View</span>
+
+				<button
+					class="menu-item"
+					[class.active]="viewMode === 'grid'"
+					(click)="setViewMode('grid')"
+				>
+					<i class="bi bi-grid"></i>
+					<span>Grid</span>
+					@if (viewMode === 'grid') {
+						<i class="bi bi-check2 check"></i>
+					}
+				</button>
+
+				<button
+					class="menu-item"
+					[class.active]="viewMode === 'list'"
+					(click)="setViewMode('list')"
+				>
+					<i class="bi bi-list-ul"></i>
+					<span>List</span>
+					@if (viewMode === 'list') {
+						<i class="bi bi-check2 check"></i>
+					}
+				</button>
+			</div>
+
+			<hr class="menu-divider" />
+
+			<div class="menu-section">
+				<span class="menu-label">Sort by</span>
+
+				<button
+					class="menu-item"
+					[class.active]="sortField === 'name'"
+					(click)="setSortField('name')"
+				>
+					<i class="bi bi-fonts"></i>
+					<span>Name</span>
+					@if (sortField === 'name') {
+						<i
+							class="bi check"
+							[ngClass]="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
+						></i>
+					}
+				</button>
+
+				<button
+					class="menu-item"
+					[class.active]="sortField === 'updatedAt'"
+					(click)="setSortField('updatedAt')"
+				>
+					<i class="bi bi-calendar"></i>
+					<span>Date</span>
+					@if (sortField === 'updatedAt') {
+						<i
+							class="bi check"
+							[ngClass]="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
+						></i>
+					}
+				</button>
+			</div>
+		</div>
+	}
+</div>

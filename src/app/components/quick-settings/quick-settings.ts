@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { ToggleSwitch } from '../toggle-switch/toggle-switch';
 import { map, Observable } from 'rxjs';
@@ -15,12 +15,21 @@ import { FormsModule } from '@angular/forms';
 	styleUrl: './quick-settings.css',
 })
 export class QuickSettings {
+	private readonly el = inject(ElementRef);
+
 	private readonly store: Store = inject(Store);
 	readonly currentThemeBoolean$: Observable<boolean> = this.store
 		.select(selectTheme)
 		.pipe(map((currentTheme) => currentTheme === 'light'));
 
 	isSettingsMenuVisible: boolean = false;
+
+	@HostListener('document:click', ['$event'])
+	onDocumentClick(event: Event): void {
+		if (!this.el.nativeElement.contains(event.target)) {
+			this.isSettingsMenuVisible = false;
+		}
+	}
 
 	toggleSettingsMenu(): void {
 		this.isSettingsMenuVisible = !this.isSettingsMenuVisible;

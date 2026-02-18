@@ -2,7 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { CreateFileRequest, FileResponse, PageResponse, UpdateFileRequest } from '../types/file';
+import {
+	CreateFileRequest,
+	File,
+	PageResponse,
+	SortDirection,
+	SortField,
+	UpdateFileRequest,
+} from '../types/file';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -12,33 +19,35 @@ export class FileService {
 	getFiles(
 		ownerId: number,
 		parentId: number | null,
+		sortField: SortField = 'name',
+		sortDirection: SortDirection = 'asc',
 		page = 0,
 		size = 50,
-	): Observable<PageResponse<FileResponse>> {
+	): Observable<PageResponse<File>> {
 		let params = new HttpParams()
 			.set('ownerId', ownerId.toString())
 			.set('page', page.toString())
 			.set('size', size.toString())
 			.append('sort', 'isDirectory,desc')
-			.append('sort', 'name,asc');
+			.append('sort', `${sortField},${sortDirection}`);
 
 		if (parentId !== null) {
 			params = params.set('parentId', parentId.toString());
 		}
 
-		return this.http.get<PageResponse<FileResponse>>(this.apiUrl, { params });
+		return this.http.get<PageResponse<File>>(this.apiUrl, { params });
 	}
 
-	getFile(id: number): Observable<FileResponse> {
-		return this.http.get<FileResponse>(`${this.apiUrl}/${id}`);
+	getFile(id: number): Observable<File> {
+		return this.http.get<File>(`${this.apiUrl}/${id}`);
 	}
 
-	createFile(request: CreateFileRequest): Observable<FileResponse> {
-		return this.http.post<FileResponse>(this.apiUrl, request);
+	createFile(request: CreateFileRequest): Observable<File> {
+		return this.http.post<File>(this.apiUrl, request);
 	}
 
-	updateFile(id: number, request: UpdateFileRequest): Observable<FileResponse> {
-		return this.http.put<FileResponse>(`${this.apiUrl}/${id}`, request);
+	updateFile(id: number, request: UpdateFileRequest): Observable<File> {
+		return this.http.put<File>(`${this.apiUrl}/${id}`, request);
 	}
 
 	deleteFile(id: number): Observable<void> {
