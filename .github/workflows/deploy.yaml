@@ -1,36 +1,36 @@
 name: Build & Deploy R16a Cloud frontend
 
 on:
-  push:
-    branches: [main]
+    push:
+        branches: [main]
 
 jobs:
-  build-and-deploy:
-    runs-on: self-hosted
-    environment: Deploy
-    env:
-      KUBECONFIG: /home/r16a-runner/.kube/config
+    build-and-deploy:
+        runs-on: self-hosted
+        environment: Deploy
+        env:
+            KUBECONFIG: /home/r16a-runner/.kube/config
 
-    steps:
+        steps:
             - uses: actions/checkout@v4
 
             - name: Write production environment
               run: echo "${{ secrets.ANGULAR_ENV_PROD }}" > src/environments/environment.prod.ts
 
             - name: Login private registry
-        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.r16a.cloud -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+              run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login registry.r16a.cloud -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker image
-        run: |
-          docker build -t registry.r16a.cloud/r16a-cloud-client:${{ github.sha }} -t registry.r16a.cloud/r16a-cloud-client:latest .
-          docker push registry.r16a.cloud/r16a-cloud-client:${{ github.sha }}
-          docker push registry.r16a.cloud/r16a-cloud-client:latest
+            - name: Build and push Docker image
+              run: |
+                  docker build -t registry.r16a.cloud/r16a-cloud-client:${{ github.sha }} -t registry.r16a.cloud/r16a-cloud-client:latest .
+                  docker push registry.r16a.cloud/r16a-cloud-client:${{ github.sha }}
+                  docker push registry.r16a.cloud/r16a-cloud-client:latest
 
-      - name: Update deployment image in manifest
-        run: |
-          sed -i "s|image: registry.r16a.cloud/r16a-cloud-client:.*|image: registry.r16a.cloud/r16a-cloud-client:${{ github.sha }}|" k8s/deployment.yaml
+            - name: Update deployment image in manifest
+              run: |
+                  sed -i "s|image: registry.r16a.cloud/r16a-cloud-client:.*|image: registry.r16a.cloud/r16a-cloud-client:${{ github.sha }}|" k8s/deployment.yaml
 
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f k8s/
-          kubectl rollout status deployment/r16a-cloud-client -n r16a-cloud --timeout=120s
+            - name: Apply Kubernetes manifests
+              run: |
+                  kubectl apply -f k8s/
+                  kubectl rollout status deployment/r16a-cloud-client -n r16a-cloud --timeout=120s
