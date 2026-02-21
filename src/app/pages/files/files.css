@@ -1,0 +1,264 @@
+.files-page {
+	--file-min-size: 120px;
+	--file-height: 120px;
+
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.toolbar {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--space-2);
+	background-color: var(--colour-card);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius);
+	box-shadow: 0px 10px 8px -8px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.action-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius);
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+	border: none;
+	cursor: pointer;
+	font-size: 0.875rem;
+	white-space: nowrap;
+}
+
+.action-btn i {
+	font-size: 1.3rem;
+}
+
+.action-btn:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.action-btn.primary-btn {
+	background-color: var(--colour-primary);
+	color: #fff;
+}
+
+.action-btn.primary-btn:hover {
+	opacity: 0.85;
+}
+
+.breadcrumbs {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+	background: none;
+	border: none;
+	color: var(--colour-foreground);
+	cursor: pointer;
+	padding: var(--space-1);
+	border-radius: var(--radius);
+	font-size: 0.9rem;
+	opacity: 0.7;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.breadcrumb-item:last-child {
+	opacity: 1;
+	font-weight: 600;
+}
+
+.breadcrumb-item:hover {
+	opacity: 1;
+	background-color: var(--colour-card);
+}
+
+.breadcrumb-separator {
+	opacity: 0.4;
+	font-size: 0.85rem;
+}
+
+.btn-label {
+	display: none;
+}
+
+.selection-count {
+	font-size: 0.85rem;
+	font-weight: 500;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.action-btn.danger-btn {
+	background-color: var(--colour-alert);
+	color: #fff;
+}
+
+.action-btn.danger-btn:hover {
+	opacity: 0.85;
+}
+
+.loading-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex: 1;
+}
+
+.loading-spinner {
+	width: 28px;
+	height: 28px;
+	border: 3px solid var(--colour-card);
+	border-top-color: var(--colour-primary);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	text-align: center;
+	opacity: 0.5;
+	padding: var(--space-4);
+}
+
+.empty-state i {
+	font-size: 3rem;
+	margin-bottom: var(--space-2);
+}
+
+.empty-state h3 {
+	margin: 0;
+}
+
+.empty-state p {
+	margin: var(--space-1) 0 0;
+	font-size: 0.9rem;
+}
+
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: var(--space-3);
+}
+
+.modal {
+	background-color: var(--colour-background);
+	border: 1px solid var(--colour-card);
+	border-radius: var(--radius);
+	padding: var(--space-4);
+	width: 100%;
+	max-width: 400px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.modal-title {
+	font-size: 1.1rem;
+	font-weight: 600;
+}
+
+.modal-text {
+	margin: 0;
+	opacity: 0.7;
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.modal-input {
+	width: 100%;
+	padding: var(--space-2);
+	border: 1px solid var(--colour-accent);
+	border-radius: var(--radius);
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+	font-size: 0.9rem;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.modal-input:focus {
+	border-color: var(--colour-primary);
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-2);
+}
+
+.modal-btn {
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius);
+	border: none;
+	cursor: pointer;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.modal-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.cancel-btn {
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+}
+
+.cancel-btn:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.confirm-btn {
+	background-color: var(--colour-primary);
+	color: #fff;
+}
+
+.confirm-btn:hover {
+	opacity: 0.85;
+}
+
+.danger-btn {
+	background-color: var(--colour-alert);
+	color: #fff;
+}
+
+.danger-btn:hover {
+	opacity: 0.85;
+}
+
+@media (min-width: 768px) {
+	.btn-label {
+		display: inline;
+	}
+}

@@ -1,1 +1,194 @@
-<p>files works!</p>
+<div class="page files-page">
+	<!-- Toolbar -->
+	<div class="toolbar">
+		<div class="breadcrumbs">
+			<button class="breadcrumb-item" (click)="navigateToRoot()">Home</button>
+
+			@for (crumb of breadcrumbs; track crumb.id; let i = $index) {
+				<span class="breadcrumb-separator">/</span>
+				<button class="breadcrumb-item" (click)="navigateToBreadcrumb(i)">
+					{{ crumb.name }}
+				</button>
+			}
+		</div>
+
+		<div class="toolbar-actions">
+			@if (selectionMode) {
+				<span class="selection-count">{{ selectedFileIds.size }} selected</span>
+
+				@if (selectedFileIds.size === 1) {
+					<button class="action-btn" (click)="openRenameSelected()" title="Rename">
+						<i class="bi bi-pencil"></i>
+						<span class="btn-label">Rename</span>
+					</button>
+				}
+
+				@if (selectedFileIds.size > 0) {
+					<button class="action-btn danger-btn" (click)="openBulkDeleteConfirm()" title="Delete">
+						<i class="bi bi-trash"></i>
+						<span class="btn-label">Delete</span>
+					</button>
+				}
+
+				<button class="action-btn" (click)="cancelSelection()" title="Cancel selection">
+					<i class="bi bi-x-lg"></i>
+					<span class="btn-label">Cancel</span>
+				</button>
+			} @else {
+				<file-options
+					[viewMode]="viewMode"
+					[sortField]="sortField"
+					[sortDirection]="sortDirection"
+					[selectionMode]="selectionMode"
+					(viewModeChange)="onViewModeChange($event)"
+					(sortFieldChange)="onSortFieldChange($event)"
+					(sortDirectionChange)="onSortDirectionChange($event)"
+					(selectionModeChange)="onSelectionModeChange($event)"
+				></file-options>
+
+				<button class="action-btn primary-btn" (click)="openCreateFolderModal()" title="New folder">
+					<i class="bi bi-folder-plus"></i>
+					<span class="btn-label">New folder</span>
+				</button>
+
+				<button class="action-btn primary-btn" (click)="triggerUpload()" title="Upload files">
+					<i class="bi bi-cloud-arrow-up"></i>
+					<span class="btn-label">Upload</span>
+				</button>
+			}
+		</div>
+	</div>
+
+	<input #fileInput type="file" (change)="onFileSelected($event)" hidden multiple />
+
+	<!-- Loading -->
+	@if (loading) {
+		<div class="loading-container">
+			<div class="loading-spinner"></div>
+		</div>
+	} @else if (((files$ | async) || []).length !== 0) {
+		<!-- Grid View -->
+		@if (viewMode === 'grid') {
+			<grid-view
+				[files$]="files$"
+				[selectedFile]="selectedFile"
+				[selectionMode]="selectionMode"
+				[selectedFileIds]="selectedFileIds"
+				(fileClick)="onFileClick($event)"
+				(fileSelect)="toggleFileSelection($event)"
+				(fileRename)="openRenameModal($event.file, $event.event)"
+				(fileDelete)="openDeleteConfirm($event.file, $event.event)"
+			></grid-view>
+		}
+
+		<!-- List View -->
+		@if (viewMode === 'list') {
+			<list-view
+				[files$]="files$"
+				[selectedFile]="selectedFile"
+				[selectionMode]="selectionMode"
+				[selectedFileIds]="selectedFileIds"
+				(fileClick)="onFileClick($event)"
+				(fileSelect)="toggleFileSelection($event)"
+				(fileRename)="openRenameModal($event.file, $event.event)"
+				(fileDelete)="openDeleteConfirm($event.file, $event.event)"
+			></list-view>
+		}
+	} @else {
+		<div class="empty-state">
+			<i class="bi bi-cloud"></i>
+			<h3>No files yet</h3>
+			<p>Upload files or create a folder to get started</p>
+		</div>
+	}
+</div>
+
+<!-- Create Folder Modal -->
+@if (showCreateFolderModal) {
+	<div class="modal-overlay" (click)="closeModals()">
+		<div class="modal" (click)="$event.stopPropagation()">
+			<h3 class="modal-title">Create Folder</h3>
+			<input
+				type="text"
+				class="modal-input"
+				placeholder="Folder name"
+				[(ngModel)]="newFolderName"
+				(keydown.enter)="createFolder()"
+				autofocus
+			/>
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
+				<button
+					class="modal-btn confirm-btn"
+					(click)="createFolder()"
+					[disabled]="!newFolderName.trim()"
+				>
+					Create
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Rename Modal -->
+@if (showRenameModal) {
+	<div class="modal-overlay" (click)="closeModals()">
+		<div class="modal" (click)="$event.stopPropagation()">
+			<h3 class="modal-title">Rename</h3>
+			<input
+				type="text"
+				class="modal-input"
+				placeholder="New name"
+				[(ngModel)]="renameName"
+				(keydown.enter)="renameFile()"
+				autofocus
+			/>
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
+				<button
+					class="modal-btn confirm-btn"
+					(click)="renameFile()"
+					[disabled]="!renameName.trim()"
+				>
+					Rename
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Delete Confirmation Modal (single) -->
+@if (showDeleteConfirm) {
+	<div class="modal-overlay" (click)="closeModals()">
+		<div class="modal" (click)="$event.stopPropagation()">
+			<h3 class="modal-title">Delete {{ fileToDelete?.isDirectory ? 'folder' : 'file' }}</h3>
+			<p class="modal-text">
+				Are you sure you want to delete
+				<strong>{{ fileToDelete?.name }}</strong
+				>?
+			</p>
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
+				<button class="modal-btn danger-btn" (click)="confirmDelete()">Delete</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Bulk Delete Confirmation Modal -->
+@if (showBulkDeleteConfirm) {
+	<div class="modal-overlay" (click)="closeModals()">
+		<div class="modal" (click)="$event.stopPropagation()">
+			<h3 class="modal-title">Delete {{ selectedFileIds.size }} items</h3>
+			<p class="modal-text">
+				Are you sure you want to delete
+				<strong>{{ selectedFileIds.size }}</strong>
+				selected items? This action cannot be undone.
+			</p>
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
+				<button class="modal-btn danger-btn" (click)="confirmBulkDelete()">Delete</button>
+			</div>
+		</div>
+	</div>
+}
