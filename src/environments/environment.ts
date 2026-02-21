@@ -6,6 +6,6 @@ export const environment = {
 		clientId: '2Jati6hlDzX22iHuRMdDdliwLYmU8sLrUWjVbIO4',
 		redirectUrl: 'http://localhost:4200/callback',
 		postLogoutRedirectUri: 'http://localhost:4200/login',
-		scopes: 'openid profile email',
+		scopes: 'openid profile email offline_access',
 	},
 };
