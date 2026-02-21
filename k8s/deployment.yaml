@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r16a-cloud-client
+  namespace: r16a-cloud
+  labels:
+    app: r16a-cloud-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: r16a-cloud-client
+  template:
+    metadata:
+      labels:
+        app: r16a-cloud-client
+    spec:
+      imagePullSecrets:
+        - name: registry-r16a-cloud
+      containers:
+        - name: r16a-cloud-client
+          image: registry.r16a.cloud/r16a-cloud-client:latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -39,6 +39,9 @@ testem.log
 /typings
 __screenshots__/
 
+# Environment
+src/environments/environment.prod.ts
+
 # System files
 .DS_Store
 Thumbs.db
