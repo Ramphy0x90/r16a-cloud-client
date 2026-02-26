@@ -162,12 +162,7 @@ export class FilesPage implements OnDestroy {
 		if (!input.files?.length || ownerId === null) return;
 
 		const uploads$ = Array.from(input.files).map((file) =>
-			this.fileService.createFile({
-				name: file.name,
-				ownerId: ownerId,
-				parentId: this.currentFolder?.id ?? null,
-				isDirectory: false,
-			}),
+			this.fileService.uploadFile(ownerId, this.currentFolder?.id ?? null, file),
 		);
 
 		forkJoin(uploads$)

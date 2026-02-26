@@ -46,6 +46,20 @@ export class FileService {
 		return this.http.post<File>(this.apiUrl, request);
 	}
 
+	uploadFile(
+		ownerId: number,
+		parentId: number | null,
+		file: globalThis.File,
+	): Observable<File> {
+		const formData = new FormData();
+		formData.append('ownerId', ownerId.toString());
+		if (parentId !== null) {
+			formData.append('parentId', parentId.toString());
+		}
+		formData.append('file', file);
+		return this.http.post<File>(`${this.apiUrl}/upload`, formData);
+	}
+
 	updateFile(id: number, request: UpdateFileRequest): Observable<File> {
 		return this.http.put<File>(`${this.apiUrl}/${id}`, request);
 	}
