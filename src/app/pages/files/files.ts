@@ -35,7 +35,7 @@ export class FilesPage implements OnDestroy {
 	private readonly userService = inject(UserService);
 	private readonly destroy$ = new Subject<void>();
 
-	private readonly ownerId$: Observable<number> = this.userService.currentUser$.pipe(
+	private readonly ownerId$: Observable<string> = this.userService.currentUser$.pipe(
 		map((owner) => owner.id),
 	);
 
@@ -65,7 +65,7 @@ export class FilesPage implements OnDestroy {
 	loading = false;
 
 	selectionMode = false;
-	selectedFileIds = new Set<number>();
+	selectedFileIds = new Set<string>();
 
 	showCreateFolderModal = false;
 	showRenameModal = false;

@@ -14,7 +14,7 @@ export class GridView {
 	@Input() files$: Observable<File[]> = of([]);
 	@Input() selectedFile: File | null = null;
 	@Input() selectionMode = false;
-	@Input() selectedFileIds: Set<number> = new Set();
+	@Input() selectedFileIds: Set<string> = new Set();
 
 	@Output() fileClick = new EventEmitter<File>();
 	@Output() fileRename = new EventEmitter<{ file: File; event: Event }>();

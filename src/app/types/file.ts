@@ -5,15 +5,15 @@ export type SortField = 'name' | 'updatedAt';
 export type SortDirection = 'asc' | 'desc';
 
 export interface File {
-	id: number;
+	id: string;
 	name: string;
 	description: string | null;
 	fsPath: string;
 	isDirectory: boolean;
 	visibility: Visibility;
-	parentId: number | null;
-	ownerId: number;
-	sharedWithIds: number[];
+	parentId: string | null;
+	ownerId: string;
+	sharedWithIds: string[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -21,19 +21,19 @@ export interface File {
 export interface CreateFileRequest {
 	name: string;
 	description?: string;
-	ownerId: number;
-	parentId?: number | null;
+	ownerId: string;
+	parentId?: string | null;
 	isDirectory: boolean;
 	visibility?: Visibility;
-	sharedWithIds?: number[];
+	sharedWithIds?: string[];
 }
 
 export interface UpdateFileRequest {
 	name?: string;
 	description?: string;
-	parentId?: number;
+	parentId?: string;
 	visibility?: Visibility;
-	sharedWithIds?: number[];
+	sharedWithIds?: string[];
 }
 
 export interface PageResponse<T> {

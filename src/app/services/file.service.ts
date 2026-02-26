@@ -17,8 +17,8 @@ export class FileService {
 	private readonly apiUrl = `${environment.apiUrl}/fs`;
 
 	getFiles(
-		ownerId: number,
-		parentId: number | null,
+		ownerId: string,
+		parentId: string | null,
 		sortField: SortField = 'name',
 		sortDirection: SortDirection = 'asc',
 		page = 0,
@@ -38,7 +38,7 @@ export class FileService {
 		return this.http.get<PageResponse<File>>(this.apiUrl, { params });
 	}
 
-	getFile(id: number): Observable<File> {
+	getFile(id: string): Observable<File> {
 		return this.http.get<File>(`${this.apiUrl}/${id}`);
 	}
 
@@ -47,8 +47,8 @@ export class FileService {
 	}
 
 	uploadFile(
-		ownerId: number,
-		parentId: number | null,
+		ownerId: string,
+		parentId: string | null,
 		file: globalThis.File,
 	): Observable<File> {
 		const formData = new FormData();
@@ -60,11 +60,11 @@ export class FileService {
 		return this.http.post<File>(`${this.apiUrl}/upload`, formData);
 	}
 
-	updateFile(id: number, request: UpdateFileRequest): Observable<File> {
+	updateFile(id: string, request: UpdateFileRequest): Observable<File> {
 		return this.http.put<File>(`${this.apiUrl}/${id}`, request);
 	}
 
-	deleteFile(id: number): Observable<void> {
+	deleteFile(id: string): Observable<void> {
 		return this.http.delete<void>(`${this.apiUrl}/${id}`);
 	}
 }
