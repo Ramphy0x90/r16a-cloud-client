@@ -16,10 +16,14 @@
 			}
 
 			<div class="file-card-icon bi">
-				<i
-					class="bi"
-					[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
-				></i>
+				@if (isImageFile(file) && getImagePreviewUrl(file)) {
+					<img class="file-card-image-preview" [src]="getImagePreviewUrl(file)!" [alt]="file.name" />
+				} @else {
+					<i
+						class="bi"
+						[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
+					></i>
+				}
 			</div>
 
 			<span class="file-card-name" [title]="file.name">{{ file.name }}</span>

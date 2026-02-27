@@ -2,18 +2,23 @@ import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+	catchError,
 	combineLatest,
 	filter,
 	forkJoin,
+	from,
 	lastValueFrom,
 	map,
+	mergeMap,
 	Observable,
+	of,
 	shareReplay,
 	startWith,
 	Subject,
 	switchMap,
 	take,
 	takeUntil,
+	toArray,
 } from 'rxjs';
 import { HttpResponse } from '@angular/common/http';
 import { FileService } from '../../services/file.service';
@@ -57,6 +62,13 @@ export class FilesPage implements OnDestroy {
 		takeUntil(this.destroy$),
 	);
 
+	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.files$.pipe(
+		switchMap((files) => this.buildImagePreviewMap$(files)),
+		startWith(new Map<string, string>()),
+		shareReplay({ bufferSize: 1, refCount: true }),
+		takeUntil(this.destroy$),
+	);
+
 	viewMode: ViewMode = 'grid';
 	sortField: SortField = 'name';
 	sortDirection: SortDirection = 'asc';
@@ -72,15 +84,24 @@ export class FilesPage implements OnDestroy {
 	showRenameModal = false;
 	showDeleteConfirm = false;
 	showBulkDeleteConfirm = false;
+	showImagePreviewModal = false;
 
 	selectedFile: File | null = null;
 	fileToDelete: File | null = null;
 	fileToRename: File | null = null;
+	imagePreviewFileName: string | null = null;
+	imagePreviewFileId: string | null = null;
+	imagePreviewUrl: string | null = null;
+	imagePreviewLoading = false;
+
+	private readonly imagePreviewCache = new Map<string, string>();
+	readonly emptyImagePreviewMap = new Map<string, string>();
 
 	newFolderName = '';
 	renameName = '';
 
 	ngOnDestroy(): void {
+		this.revokeAllImagePreviewUrls();
 		this.destroy$.next();
 		this.destroy$.complete();
 	}
@@ -125,6 +146,11 @@ export class FilesPage implements OnDestroy {
 	onFileClick(file: File): void {
 		if (file.isDirectory) {
 			this.navigateToFolder(file);
+			return;
+		}
+
+		if (this.isImageFile(file)) {
+			this.openImagePreview(file);
 		}
 	}
 
@@ -329,8 +355,17 @@ export class FilesPage implements OnDestroy {
 		this.showRenameModal = false;
 		this.showDeleteConfirm = false;
 		this.showBulkDeleteConfirm = false;
+		this.closeImagePreviewModal();
 		this.fileToDelete = null;
 		this.fileToRename = null;
+	}
+
+	closeImagePreviewModal(): void {
+		this.showImagePreviewModal = false;
+		this.imagePreviewLoading = false;
+		this.imagePreviewFileName = null;
+		this.imagePreviewFileId = null;
+		this.imagePreviewUrl = null;
 	}
 
 	private extractDownloadFilename(response: HttpResponse<Blob>): string | null {
@@ -356,5 +391,86 @@ export class FilesPage implements OnDestroy {
 		anchor.click();
 		document.body.removeChild(anchor);
 		URL.revokeObjectURL(url);
+	}
+
+	private isImageFile(file: File): boolean {
+		if (file.isDirectory) return false;
+		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+	}
+
+	private async openImagePreview(file: File): Promise<void> {
+		this.showImagePreviewModal = true;
+		this.imagePreviewFileName = file.name;
+		this.imagePreviewFileId = file.id;
+		this.imagePreviewUrl = this.imagePreviewCache.get(file.id) ?? null;
+		this.imagePreviewLoading = this.imagePreviewUrl == null;
+
+		if (this.imagePreviewLoading) {
+			const preview = await lastValueFrom(this.ensureImagePreview$(file));
+			this.imagePreviewUrl = preview?.[1] ?? null;
+			this.imagePreviewLoading = false;
+		}
+	}
+
+	private buildImagePreviewMap$(files: File[]): Observable<Map<string, string>> {
+		const imageFiles = files.filter((file) => this.isImageFile(file));
+		const validIds = new Set(imageFiles.map((file) => file.id));
+		this.cleanupStaleImagePreviewUrls(validIds);
+
+		if (imageFiles.length === 0) {
+			return of(new Map());
+		}
+
+		return from(imageFiles).pipe(
+			mergeMap((file) => this.ensureImagePreview$(file), 4),
+			toArray(),
+			map((entries) => {
+				const mapWithValidUrls = new Map<string, string>();
+				for (const entry of entries) {
+					if (!entry) continue;
+					mapWithValidUrls.set(entry[0], entry[1]);
+				}
+				return mapWithValidUrls;
+			}),
+		);
+	}
+
+	private ensureImagePreview$(file: File): Observable<[string, string] | null> {
+		const existing = this.imagePreviewCache.get(file.id);
+		if (existing) {
+			return of([file.id, existing]);
+		}
+
+		return this.fileService.downloadFile(file.id).pipe(
+			take(1),
+			map((response) => {
+				if (!response.body) return null;
+				const previewUrl = URL.createObjectURL(response.body);
+				this.imagePreviewCache.set(file.id, previewUrl);
+				return [file.id, previewUrl] as [string, string];
+			}),
+			catchError((err) => {
+				console.error('Failed to load image preview:', err);
+				return of(null);
+			}),
+		);
+	}
+
+	private cleanupStaleImagePreviewUrls(validIds: Set<string>): void {
+		for (const [fileId, previewUrl] of this.imagePreviewCache.entries()) {
+			if (validIds.has(fileId)) continue;
+			URL.revokeObjectURL(previewUrl);
+			this.imagePreviewCache.delete(fileId);
+			if (this.imagePreviewFileId === fileId) {
+				this.closeImagePreviewModal();
+			}
+		}
+	}
+
+	private revokeAllImagePreviewUrls(): void {
+		for (const previewUrl of this.imagePreviewCache.values()) {
+			URL.revokeObjectURL(previewUrl);
+		}
+		this.imagePreviewCache.clear();
 	}
 }

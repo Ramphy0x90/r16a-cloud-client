@@ -3,11 +3,9 @@
 		@if (selectionMode) {
 			<div class="list-cell checkbox-cell"></div>
 		}
+
 		<div class="list-cell name-cell">Name</div>
 		<div class="list-cell date-cell">Modified</div>
-		@if (!selectionMode) {
-			<div class="list-cell actions-cell"></div>
-		}
 	</div>
 
 	@for (file of files$ | async; track file.id) {
@@ -26,10 +24,15 @@
 			}
 
 			<div class="list-cell name-cell">
-				<i
-					class="bi"
-					[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
-				></i>
+				@if (isImageFile(file) && getImagePreviewUrl(file)) {
+					<img class="file-preview-thumb" [src]="getImagePreviewUrl(file)!" [alt]="file.name" />
+				} @else {
+					<i
+						class="bi"
+						[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
+					></i>
+				}
+
 				<span [title]="file.name">{{ file.name }}</span>
 			</div>
 

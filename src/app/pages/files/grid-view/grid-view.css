@@ -32,9 +32,17 @@
 }
 
 .file-card-icon i {
-	font-size: clamp(2rem, 2vw, 2.5rem);
+	font-size: clamp(2.6rem, 4vw, 3rem);
 	opacity: 0.8;
 	line-height: 1;
+}
+
+.file-card-image-preview {
+	width: clamp(2.6rem, 4vw, 3.2rem);
+	height: clamp(2.6rem, 4vw, 3.2rem);
+	object-fit: cover;
+	border-radius: 8px;
+	border: 1px solid var(--colour-card-hover);
 }
 
 .file-card-icon.folder-icon {

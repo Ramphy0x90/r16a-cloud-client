@@ -15,6 +15,7 @@ export class GridView {
 	@Input() selectedFile: File | null = null;
 	@Input() selectionMode = false;
 	@Input() selectedFileIds: Set<string> = new Set();
+	@Input() imagePreviewUrls: Map<string, string> = new Map();
 
 	@Output() fileClick = new EventEmitter<File>();
 	@Output() fileRename = new EventEmitter<{ file: File; event: Event }>();
@@ -27,5 +28,14 @@ export class GridView {
 		} else {
 			this.fileClick.emit(file);
 		}
+	}
+
+	isImageFile(file: File): boolean {
+		if (file.isDirectory) return false;
+		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+	}
+
+	getImagePreviewUrl(file: File): string | null {
+		return this.imagePreviewUrls.get(file.id) ?? null;
 	}
 }

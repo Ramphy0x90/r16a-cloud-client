@@ -79,6 +79,7 @@
 				[selectedFile]="selectedFile"
 				[selectionMode]="selectionMode"
 				[selectedFileIds]="selectedFileIds"
+				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
 				(fileClick)="onFileClick($event)"
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
@@ -93,6 +94,7 @@
 				[selectedFile]="selectedFile"
 				[selectionMode]="selectionMode"
 				[selectedFileIds]="selectedFileIds"
+				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
 				(fileClick)="onFileClick($event)"
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
@@ -130,6 +132,32 @@
 				>
 					Create
 				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Image Preview Modal -->
+@if (showImagePreviewModal) {
+	<div class="modal-overlay image-modal-overlay" (click)="closeImagePreviewModal()">
+		<div class="image-modal" (click)="$event.stopPropagation()">
+			<div class="image-modal-header">
+				<h3 class="modal-title">{{ imagePreviewFileName }}</h3>
+				<button class="icon-btn image-modal-close" (click)="closeImagePreviewModal()" aria-label="Close image">
+					<i class="bi bi-x-lg"></i>
+				</button>
+			</div>
+
+			<div class="image-modal-content">
+				@if (imagePreviewUrl) {
+					<img class="image-modal-preview" [src]="imagePreviewUrl" [alt]="imagePreviewFileName ?? 'Image'" />
+				} @else if (imagePreviewLoading) {
+					<div class="loading-container image-modal-loading">
+						<div class="loading-spinner"></div>
+					</div>
+				} @else {
+					<p class="modal-text">Could not load image preview.</p>
+				}
 			</div>
 		</div>
 	</div>
