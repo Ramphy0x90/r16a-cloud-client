@@ -15,6 +15,7 @@ import {
 	take,
 	takeUntil,
 } from 'rxjs';
+import { HttpResponse } from '@angular/common/http';
 import { FileService } from '../../services/file.service';
 import { UserService } from '../../services/user.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
@@ -291,6 +292,38 @@ export class FilesPage implements OnDestroy {
 			});
 	}
 
+	downloadSelected(): void {
+		const selectedIds = Array.from(this.selectedFileIds);
+		if (selectedIds.length === 0) return;
+
+		this.files$.pipe(take(1)).subscribe((files) => {
+			const selectedFiles = files.filter((file) => this.selectedFileIds.has(file.id));
+			if (selectedFiles.length === 0) return;
+
+			const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
+			const download$ =
+				singleSelected && !singleSelected.isDirectory
+					? this.fileService.downloadFile(singleSelected.id)
+					: this.fileService.downloadFiles(selectedIds);
+
+			download$.pipe(take(1)).subscribe({
+				next: (response) => {
+					if (!response.body) return;
+
+					const fallbackName =
+						singleSelected && !singleSelected.isDirectory
+							? singleSelected.name
+							: `download_${Date.now()}.zip`;
+
+					const filename = this.extractDownloadFilename(response) ?? fallbackName;
+					this.triggerBrowserDownload(response.body, filename);
+					this.cancelSelection();
+				},
+				error: (err) => console.error('Failed to download selected files:', err),
+			});
+		});
+	}
+
 	closeModals(): void {
 		this.showCreateFolderModal = false;
 		this.showRenameModal = false;
@@ -298,5 +331,30 @@ export class FilesPage implements OnDestroy {
 		this.showBulkDeleteConfirm = false;
 		this.fileToDelete = null;
 		this.fileToRename = null;
+	}
+
+	private extractDownloadFilename(response: HttpResponse<Blob>): string | null {
+		const contentDisposition = response.headers.get('content-disposition');
+		if (!contentDisposition) return null;
+
+		const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+		if (encodedMatch?.[1]) {
+			return decodeURIComponent(encodedMatch[1]);
+		}
+
+		const regularMatch = contentDisposition.match(/filename="([^"]+)"/i);
+		return regularMatch?.[1] ?? null;
+	}
+
+	private triggerBrowserDownload(blob: Blob, filename: string): void {
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+
+		anchor.href = url;
+		anchor.download = filename;
+		document.body.appendChild(anchor);
+		anchor.click();
+		document.body.removeChild(anchor);
+		URL.revokeObjectURL(url);
 	}
 }

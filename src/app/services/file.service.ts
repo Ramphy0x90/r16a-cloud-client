@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
@@ -46,16 +46,14 @@ export class FileService {
 		return this.http.post<File>(this.apiUrl, request);
 	}
 
-	uploadFile(
-		ownerId: string,
-		parentId: string | null,
-		file: globalThis.File,
-	): Observable<File> {
+	uploadFile(ownerId: string, parentId: string | null, file: globalThis.File): Observable<File> {
 		const formData = new FormData();
 		formData.append('ownerId', ownerId.toString());
+
 		if (parentId !== null) {
 			formData.append('parentId', parentId.toString());
 		}
+
 		formData.append('file', file);
 		return this.http.post<File>(`${this.apiUrl}/upload`, formData);
 	}
@@ -66,5 +64,16 @@ export class FileService {
 
 	deleteFile(id: string): Observable<void> {
 		return this.http.delete<void>(`${this.apiUrl}/${id}`);
+	}
+
+	downloadFile(id: string): Observable<HttpResponse<Blob>> {
+		return this.http.get(`${this.apiUrl}/${id}/download`, {
+			observe: 'response',
+			responseType: 'blob',
+		});
+	}
+
+	downloadFiles(ids: string[]): Observable<HttpResponse<Blob>> {
+		return this.http.post(`${this.apiUrl}/download`, { ids }, { observe: 'response', responseType: 'blob' });
 	}
 }

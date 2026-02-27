@@ -24,6 +24,11 @@
 				}
 
 				@if (selectedFileIds.size > 0) {
+					<button class="action-btn" (click)="downloadSelected()" title="Download">
+						<i class="bi bi-download"></i>
+						<span class="btn-label">Download</span>
+					</button>
+
 					<button class="action-btn danger-btn" (click)="openBulkDeleteConfirm()" title="Delete">
 						<i class="bi bi-trash"></i>
 						<span class="btn-label">Delete</span>
