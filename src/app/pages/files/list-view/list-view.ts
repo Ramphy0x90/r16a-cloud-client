@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { File } from '../../../types/file';
 import { IconFromExtensionPipe } from '../../../pipes/icon-from-extension-pipe';
+import { InViewportDirective } from '../../../directives/in-viewport.directive';
 
 @Component({
 	selector: 'list-view',
-	imports: [CommonModule, IconFromExtensionPipe],
+	imports: [CommonModule, IconFromExtensionPipe, InViewportDirective],
 	templateUrl: './list-view.html',
 	styleUrl: './list-view.css',
 })
@@ -21,6 +22,7 @@ export class ListView {
 	@Output() fileRename = new EventEmitter<{ file: File; event: Event }>();
 	@Output() fileDelete = new EventEmitter<{ file: File; event: Event }>();
 	@Output() fileSelect = new EventEmitter<File>();
+	@Output() imageVisible = new EventEmitter<File>();
 
 	onFileAction(file: File): void {
 		if (this.selectionMode) {
@@ -37,5 +39,9 @@ export class ListView {
 
 	getImagePreviewUrl(file: File): string | null {
 		return this.imagePreviewUrls.get(file.id) ?? null;
+	}
+
+	onImageVisible(file: File): void {
+		this.imageVisible.emit(file);
 	}
 }

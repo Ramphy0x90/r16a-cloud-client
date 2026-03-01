@@ -84,6 +84,7 @@
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
 				(fileDelete)="openDeleteConfirm($event.file, $event.event)"
+				(imageVisible)="onImageVisible($event)"
 			></grid-view>
 		}
 
@@ -99,6 +100,7 @@
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
 				(fileDelete)="openDeleteConfirm($event.file, $event.event)"
+				(imageVisible)="onImageVisible($event)"
 			></list-view>
 		}
 	} @else {

@@ -23,7 +23,7 @@
 				</div>
 			}
 
-			<div class="list-cell name-cell">
+			<div class="list-cell name-cell" inViewport (inViewport)="onImageVisible(file)">
 				@if (isImageFile(file) && getImagePreviewUrl(file)) {
 					<img class="file-preview-thumb" [src]="getImagePreviewUrl(file)!" [alt]="file.name" />
 				} @else {

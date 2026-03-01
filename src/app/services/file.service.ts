@@ -73,6 +73,15 @@ export class FileService {
 		});
 	}
 
+	downloadThumbnail(id: string, size: 'small' | 'medium' = 'small'): Observable<HttpResponse<Blob>> {
+		const params = new HttpParams().set('size', size);
+		return this.http.get(`${this.apiUrl}/${id}/thumbnail`, {
+			params,
+			observe: 'response',
+			responseType: 'blob',
+		});
+	}
+
 	downloadFiles(ids: string[]): Observable<HttpResponse<Blob>> {
 		return this.http.post(`${this.apiUrl}/download`, { ids }, { observe: 'response', responseType: 'blob' });
 	}

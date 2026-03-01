@@ -1,12 +1,12 @@
-import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+	BehaviorSubject,
 	catchError,
 	combineLatest,
 	filter,
 	forkJoin,
-	from,
 	lastValueFrom,
 	map,
 	mergeMap,
@@ -18,15 +18,22 @@ import {
 	switchMap,
 	take,
 	takeUntil,
-	toArray,
+	timeout,
 } from 'rxjs';
 import { HttpResponse } from '@angular/common/http';
 import { FileService } from '../../services/file.service';
+import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
+
+interface CachedImagePreview {
+	url: string;
+	expiresAt: number;
+	lastAccessedAt: number;
+}
 
 @Component({
 	selector: 'files-page',
@@ -38,7 +45,9 @@ export class FilesPage implements OnDestroy {
 	@ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
 	private readonly fileService = inject(FileService);
+	private readonly filesCacheService = inject(FilesCacheService);
 	private readonly userService = inject(UserService);
+	private readonly cdr = inject(ChangeDetectorRef);
 	private readonly destroy$ = new Subject<void>();
 
 	private readonly ownerId$: Observable<string> = this.userService.currentUser$.pipe(
@@ -46,6 +55,11 @@ export class FilesPage implements OnDestroy {
 	);
 
 	private readonly triggerFilesFetch$: Subject<void> = new Subject();
+	private readonly imagePreviewLoadQueue$ = new Subject<File>();
+	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
+
+	private readonly thumbnailPreviewTtlMs = 5 * 60_000;
+	private readonly maxThumbnailCacheSize = 400;
 
 	readonly files$: Observable<File[]> = combineLatest([
 		this.triggerFilesFetch$.pipe(startWith(void 0)),
@@ -54,17 +68,13 @@ export class FilesPage implements OnDestroy {
 		filter(([_, ownerId]) => ownerId != null),
 		switchMap(([_, ownerId]) => {
 			const parentId = this.currentFolder?.id ?? null;
-			return this.fileService
-				.getFiles(ownerId, parentId, this.sortField, this.sortDirection)
-				.pipe(map((page) => page.content));
+			return this.filesCacheService.getFilesCached(ownerId, parentId, this.sortField, this.sortDirection);
 		}),
 		shareReplay({ bufferSize: 1, refCount: true }),
 		takeUntil(this.destroy$),
 	);
 
-	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.files$.pipe(
-		switchMap((files) => this.buildImagePreviewMap$(files)),
-		startWith(new Map<string, string>()),
+	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.imagePreviewUrlsSubject.pipe(
 		shareReplay({ bufferSize: 1, refCount: true }),
 		takeUntil(this.destroy$),
 	);
@@ -93,12 +103,33 @@ export class FilesPage implements OnDestroy {
 	imagePreviewFileId: string | null = null;
 	imagePreviewUrl: string | null = null;
 	imagePreviewLoading = false;
+	private imagePreviewRequestVersion = 0;
 
-	private readonly imagePreviewCache = new Map<string, string>();
+	private readonly thumbnailPreviewCache = new Map<string, CachedImagePreview>();
+	private readonly thumbnailPreviewInFlight = new Map<string, Observable<[string, string] | null>>();
+	private readonly fullImagePreviewCache = new Map<string, string>();
 	readonly emptyImagePreviewMap = new Map<string, string>();
 
 	newFolderName = '';
 	renameName = '';
+
+	constructor() {
+		this.files$
+			.pipe(takeUntil(this.destroy$))
+			.subscribe((files) => this.reconcileThumbnailCacheWithFiles(files));
+
+		this.imagePreviewLoadQueue$
+			.pipe(
+				mergeMap((file) => this.ensureThumbnailPreview$(file), 4),
+				takeUntil(this.destroy$),
+			)
+			.subscribe((preview) => {
+				if (!preview) return;
+				const next = new Map(this.imagePreviewUrlsSubject.value);
+				next.set(preview[0], preview[1]);
+				this.imagePreviewUrlsSubject.next(next);
+			});
+	}
 
 	ngOnDestroy(): void {
 		this.revokeAllImagePreviewUrls();
@@ -113,12 +144,12 @@ export class FilesPage implements OnDestroy {
 	onSortFieldChange(field: SortField): void {
 		this.sortField = field;
 		this.sortDirection = 'asc';
-		this.triggerFilesFetch$.next();
+		this.requestFilesRefresh();
 	}
 
 	onSortDirectionChange(direction: SortDirection): void {
 		this.sortDirection = direction;
-		this.triggerFilesFetch$.next();
+		this.requestFilesRefresh();
 	}
 
 	onSelectionModeChange(enabled: boolean): void {
@@ -159,7 +190,7 @@ export class FilesPage implements OnDestroy {
 		this.currentFolder = folder;
 		this.selectedFile = null;
 		this.cancelSelection();
-		this.triggerFilesFetch$.next();
+		this.requestFilesRefresh();
 	}
 
 	navigateToRoot(): void {
@@ -167,7 +198,7 @@ export class FilesPage implements OnDestroy {
 		this.currentFolder = null;
 		this.selectedFile = null;
 		this.cancelSelection();
-		this.triggerFilesFetch$.next();
+		this.requestFilesRefresh();
 	}
 
 	navigateToBreadcrumb(index: number): void {
@@ -175,7 +206,7 @@ export class FilesPage implements OnDestroy {
 		this.currentFolder = this.breadcrumbs[index] ?? null;
 		this.selectedFile = null;
 		this.cancelSelection();
-		this.triggerFilesFetch$.next();
+		this.requestFilesRefresh();
 	}
 
 	triggerUpload(): void {
@@ -195,10 +226,10 @@ export class FilesPage implements OnDestroy {
 		forkJoin(uploads$)
 			.pipe(take(1))
 			.subscribe({
-				next: () => this.triggerFilesFetch$.next(),
+				next: () => this.refreshCurrentFolderAfterMutation(),
 				error: (err) => {
 					console.error('Failed to upload files:', err);
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 			});
 
@@ -226,7 +257,7 @@ export class FilesPage implements OnDestroy {
 			.subscribe({
 				next: () => {
 					this.closeModals();
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => console.error('Failed to create folder:', err),
 			});
@@ -261,7 +292,7 @@ export class FilesPage implements OnDestroy {
 				next: () => {
 					this.closeModals();
 					if (this.selectionMode) this.cancelSelection();
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => console.error('Failed to rename:', err),
 			});
@@ -287,7 +318,7 @@ export class FilesPage implements OnDestroy {
 						this.selectedFile = null;
 					}
 					this.closeModals();
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => console.error('Failed to delete:', err),
 			});
@@ -308,14 +339,18 @@ export class FilesPage implements OnDestroy {
 				next: () => {
 					this.showBulkDeleteConfirm = false;
 					this.cancelSelection();
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => {
 					console.error('Failed to delete files:', err);
 					this.showBulkDeleteConfirm = false;
-					this.triggerFilesFetch$.next();
+					this.refreshCurrentFolderAfterMutation();
 				},
 			});
+	}
+
+	onImageVisible(file: File): void {
+		this.queueImagePreview(file);
 	}
 
 	downloadSelected(): void {
@@ -361,6 +396,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	closeImagePreviewModal(): void {
+		this.imagePreviewRequestVersion += 1;
 		this.showImagePreviewModal = false;
 		this.imagePreviewLoading = false;
 		this.imagePreviewFileName = null;
@@ -399,68 +435,164 @@ export class FilesPage implements OnDestroy {
 	}
 
 	private async openImagePreview(file: File): Promise<void> {
+		const requestVersion = ++this.imagePreviewRequestVersion;
 		this.showImagePreviewModal = true;
 		this.imagePreviewFileName = file.name;
 		this.imagePreviewFileId = file.id;
-		this.imagePreviewUrl = this.imagePreviewCache.get(file.id) ?? null;
+		this.imagePreviewUrl = this.fullImagePreviewCache.get(file.id) ?? null;
 		this.imagePreviewLoading = this.imagePreviewUrl == null;
+		this.cdr.detectChanges();
 
-		if (this.imagePreviewLoading) {
-			const preview = await lastValueFrom(this.ensureImagePreview$(file));
+		if (!this.imagePreviewLoading) {
+			return;
+		}
+
+		try {
+			const preview = await lastValueFrom(this.ensureFullImagePreview$(file));
+			if (requestVersion !== this.imagePreviewRequestVersion) {
+				return;
+			}
 			this.imagePreviewUrl = preview?.[1] ?? null;
-			this.imagePreviewLoading = false;
+		} finally {
+			if (requestVersion === this.imagePreviewRequestVersion) {
+				this.imagePreviewLoading = false;
+				this.cdr.detectChanges();
+			}
 		}
 	}
 
-	private buildImagePreviewMap$(files: File[]): Observable<Map<string, string>> {
+	private requestFilesRefresh(): void {
+		this.triggerFilesFetch$.next();
+	}
+
+	private refreshCurrentFolderAfterMutation(): void {
+		this.invalidateCurrentFolderFilesCache();
+		this.requestFilesRefresh();
+	}
+
+	private invalidateCurrentFolderFilesCache(): void {
+		this.ownerId$.pipe(take(1)).subscribe((ownerId) => {
+			this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
+		});
+	}
+
+	private queueImagePreview(file: File): void {
+		if (!this.isImageFile(file)) return;
+		if (this.getThumbnailPreviewUrl(file.id)) return;
+		if (this.thumbnailPreviewInFlight.has(file.id)) return;
+		this.imagePreviewLoadQueue$.next(file);
+	}
+
+	private reconcileThumbnailCacheWithFiles(files: File[]): void {
 		const imageFiles = files.filter((file) => this.isImageFile(file));
 		const validIds = new Set(imageFiles.map((file) => file.id));
 		this.cleanupStaleImagePreviewUrls(validIds);
-
-		if (imageFiles.length === 0) {
-			return of(new Map());
+		const next = new Map<string, string>();
+		for (const file of imageFiles) {
+			const cachedUrl = this.getThumbnailPreviewUrl(file.id);
+			if (cachedUrl) {
+				next.set(file.id, cachedUrl);
+			}
 		}
-
-		return from(imageFiles).pipe(
-			mergeMap((file) => this.ensureImagePreview$(file), 4),
-			toArray(),
-			map((entries) => {
-				const mapWithValidUrls = new Map<string, string>();
-				for (const entry of entries) {
-					if (!entry) continue;
-					mapWithValidUrls.set(entry[0], entry[1]);
-				}
-				return mapWithValidUrls;
-			}),
-		);
+		this.imagePreviewUrlsSubject.next(next);
 	}
 
-	private ensureImagePreview$(file: File): Observable<[string, string] | null> {
-		const existing = this.imagePreviewCache.get(file.id);
+	private getThumbnailPreviewUrl(fileId: string): string | null {
+		const cached = this.thumbnailPreviewCache.get(fileId);
+		if (!cached) return null;
+		if (cached.expiresAt <= Date.now()) {
+			URL.revokeObjectURL(cached.url);
+			this.thumbnailPreviewCache.delete(fileId);
+			return null;
+		}
+		cached.lastAccessedAt = Date.now();
+		return cached.url;
+	}
+
+	private ensureThumbnailPreview$(file: File): Observable<[string, string] | null> {
+		const existing = this.getThumbnailPreviewUrl(file.id);
 		if (existing) {
 			return of([file.id, existing]);
 		}
 
-		return this.fileService.downloadFile(file.id).pipe(
+		const inflight = this.thumbnailPreviewInFlight.get(file.id);
+		if (inflight) {
+			return inflight;
+		}
+
+		const request$ = this.fileService.downloadThumbnail(file.id, 'small').pipe(
 			take(1),
 			map((response) => {
 				if (!response.body) return null;
 				const previewUrl = URL.createObjectURL(response.body);
-				this.imagePreviewCache.set(file.id, previewUrl);
+				this.setThumbnailPreview(file.id, previewUrl);
 				return [file.id, previewUrl] as [string, string];
 			}),
 			catchError((err) => {
 				console.error('Failed to load image preview:', err);
 				return of(null);
 			}),
+			shareReplay({ bufferSize: 1, refCount: false }),
+		);
+
+		this.thumbnailPreviewInFlight.set(file.id, request$);
+		request$.pipe(take(1)).subscribe({
+			next: () => this.thumbnailPreviewInFlight.delete(file.id),
+			error: () => this.thumbnailPreviewInFlight.delete(file.id),
+		});
+
+		return request$;
+	}
+
+	private ensureFullImagePreview$(file: File): Observable<[string, string] | null> {
+		const existing = this.fullImagePreviewCache.get(file.id);
+		if (existing) {
+			return of([file.id, existing]);
+		}
+
+		return this.fileService.downloadFile(file.id).pipe(
+			timeout(15_000),
+			take(1),
+			map((response) => {
+				if (!response.body) return null;
+				const previewUrl = URL.createObjectURL(response.body);
+				this.fullImagePreviewCache.set(file.id, previewUrl);
+				return [file.id, previewUrl] as [string, string];
+			}),
+			catchError((err) => {
+				console.error('Failed to load full image preview:', err);
+				return of(null);
+			}),
 		);
 	}
 
+	private setThumbnailPreview(fileId: string, url: string): void {
+		this.thumbnailPreviewCache.set(fileId, {
+			url,
+			expiresAt: Date.now() + this.thumbnailPreviewTtlMs,
+			lastAccessedAt: Date.now(),
+		});
+		this.evictExcessThumbnailEntries();
+	}
+
+	private evictExcessThumbnailEntries(): void {
+		if (this.thumbnailPreviewCache.size <= this.maxThumbnailCacheSize) return;
+		const ordered = Array.from(this.thumbnailPreviewCache.entries()).sort(
+			(a, b) => a[1].lastAccessedAt - b[1].lastAccessedAt,
+		);
+
+		for (const [fileId, preview] of ordered) {
+			if (this.thumbnailPreviewCache.size <= this.maxThumbnailCacheSize) break;
+			URL.revokeObjectURL(preview.url);
+			this.thumbnailPreviewCache.delete(fileId);
+		}
+	}
+
 	private cleanupStaleImagePreviewUrls(validIds: Set<string>): void {
-		for (const [fileId, previewUrl] of this.imagePreviewCache.entries()) {
+		for (const [fileId, preview] of this.thumbnailPreviewCache.entries()) {
 			if (validIds.has(fileId)) continue;
-			URL.revokeObjectURL(previewUrl);
-			this.imagePreviewCache.delete(fileId);
+			URL.revokeObjectURL(preview.url);
+			this.thumbnailPreviewCache.delete(fileId);
 			if (this.imagePreviewFileId === fileId) {
 				this.closeImagePreviewModal();
 			}
@@ -468,9 +600,15 @@ export class FilesPage implements OnDestroy {
 	}
 
 	private revokeAllImagePreviewUrls(): void {
-		for (const previewUrl of this.imagePreviewCache.values()) {
+		for (const preview of this.thumbnailPreviewCache.values()) {
+			URL.revokeObjectURL(preview.url);
+		}
+		this.thumbnailPreviewCache.clear();
+		this.thumbnailPreviewInFlight.clear();
+
+		for (const previewUrl of this.fullImagePreviewCache.values()) {
 			URL.revokeObjectURL(previewUrl);
 		}
-		this.imagePreviewCache.clear();
+		this.fullImagePreviewCache.clear();
 	}
 }

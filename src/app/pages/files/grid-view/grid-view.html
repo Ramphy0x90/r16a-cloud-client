@@ -15,7 +15,7 @@
 				</div>
 			}
 
-			<div class="file-card-icon bi">
+			<div class="file-card-icon bi" inViewport (inViewport)="onImageVisible(file)">
 				@if (isImageFile(file) && getImagePreviewUrl(file)) {
 					<img class="file-card-image-preview" [src]="getImagePreviewUrl(file)!" [alt]="file.name" />
 				} @else {
