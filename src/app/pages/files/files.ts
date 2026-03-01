@@ -509,9 +509,8 @@ export class FilesPage implements OnDestroy {
 	}
 
 	private reconcileThumbnailCacheWithFiles(files: File[]): void {
+		this.cleanupExpiredThumbnailPreviews();
 		const imageFiles = files.filter((file) => this.isImageFile(file));
-		const validIds = new Set(imageFiles.map((file) => file.id));
-		this.cleanupStaleImagePreviewUrls(validIds);
 		const next = new Map<string, string>();
 		for (const file of imageFiles) {
 			const cachedUrl = this.getThumbnailPreviewUrl(file.id);
@@ -526,8 +525,7 @@ export class FilesPage implements OnDestroy {
 		const cached = this.thumbnailPreviewCache.get(fileId);
 		if (!cached) return null;
 		if (cached.expiresAt <= Date.now()) {
-			URL.revokeObjectURL(cached.url);
-			this.thumbnailPreviewCache.delete(fileId);
+			this.removeThumbnailPreview(fileId);
 			return null;
 		}
 		cached.lastAccessedAt = Date.now();
@@ -608,21 +606,23 @@ export class FilesPage implements OnDestroy {
 
 		for (const [fileId, preview] of ordered) {
 			if (this.thumbnailPreviewCache.size <= this.maxThumbnailCacheSize) break;
-			URL.revokeObjectURL(preview.url);
-			this.thumbnailPreviewCache.delete(fileId);
+			this.removeThumbnailPreview(fileId);
 		}
 	}
 
-	private cleanupStaleImagePreviewUrls(validIds: Set<string>): void {
-		const previewState = this.imagePreviewStateSubject.value;
+	private cleanupExpiredThumbnailPreviews(): void {
+		const now = Date.now();
 		for (const [fileId, preview] of this.thumbnailPreviewCache.entries()) {
-			if (validIds.has(fileId)) continue;
-			URL.revokeObjectURL(preview.url);
-			this.thumbnailPreviewCache.delete(fileId);
-			if (previewState.fileId === fileId) {
-				this.closeImagePreviewModal();
-			}
+			if (preview.expiresAt > now) continue;
+			this.removeThumbnailPreview(fileId);
 		}
+	}
+
+	private removeThumbnailPreview(fileId: string): void {
+		const preview = this.thumbnailPreviewCache.get(fileId);
+		if (!preview) return;
+		URL.revokeObjectURL(preview.url);
+		this.thumbnailPreviewCache.delete(fileId);
 	}
 
 	private revokeAllImagePreviewUrls(): void {
