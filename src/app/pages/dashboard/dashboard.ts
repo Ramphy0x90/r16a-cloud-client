@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, map, Observable, of, shareReplay, startWith, switchMap } from 'rxjs';
 import { FileSizePipe } from '../../pipes/file-size-pipe';
+import { IconFromExtensionPipe } from '../../pipes/icon-from-extension-pipe';
 import { FileService } from '../../services/file.service';
 import { UserService } from '../../services/user.service';
 import { DashboardResponse } from '../../types/file';
@@ -15,7 +16,7 @@ interface DashboardState {
 
 @Component({
 	selector: 'dashboard-page',
-	imports: [CommonModule, RouterLink, FileSizePipe],
+	imports: [CommonModule, RouterLink, FileSizePipe, IconFromExtensionPipe],
 	templateUrl: './dashboard.html',
 	styleUrl: './dashboard.css',
 })

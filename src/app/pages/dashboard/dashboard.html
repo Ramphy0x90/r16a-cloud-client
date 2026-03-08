@@ -12,23 +12,35 @@
 		} @else if (state.data; as dashboard) {
 			<section class="metrics-grid">
 				<article class="metric-card">
-					<p class="metric-label">Files uploaded</p>
+					<div class="metric-top">
+						<p class="metric-label">Files uploaded</p>
+						<div class="metric-icon"><i class="bi bi-cloud-upload"></i></div>
+					</div>
 					<p class="metric-value">{{ dashboard.metrics.uploadedFiles }}</p>
 				</article>
 				<article class="metric-card">
-					<p class="metric-label">Used storage</p>
+					<div class="metric-top">
+						<p class="metric-label">Used storage</p>
+						<div class="metric-icon"><i class="bi bi-hdd"></i></div>
+					</div>
 					<p class="metric-value">{{ dashboard.metrics.usedStorageBytes | fileSize }}</p>
 				</article>
 				<article class="metric-card">
-					<p class="metric-label">Shared files</p>
+					<div class="metric-top">
+						<p class="metric-label">Shared files</p>
+						<div class="metric-icon"><i class="bi bi-share"></i></div>
+					</div>
 					<p class="metric-value">{{ dashboard.metrics.sharedFiles }}</p>
 				</article>
 			</section>
 
 			<section class="recent-section">
 				<div class="recent-header">
-					<h2>Top 5 most recent files</h2>
-					<a routerLink="/files">View all files</a>
+					<h2>Recent files</h2>
+					<a class="view-all-link" routerLink="/files">
+						View all
+						<i class="bi bi-arrow-right"></i>
+					</a>
 				</div>
 
 				@if (dashboard.recentFiles.length === 0) {
@@ -40,13 +52,18 @@
 					<div class="recent-list">
 						@for (file of dashboard.recentFiles; track file.id) {
 							<div class="recent-row">
+								<div class="file-icon-wrap">
+									<i class="bi" [ngClass]="file.name | iconFromExtension"></i>
+								</div>
 								<div class="file-main">
-									<p class="file-name">{{ file.name }}</p>
-									<span class="visibility-chip">{{ file.visibility }}</span>
+									<p class="file-name" [title]="file.name">{{ file.name }}</p>
+									<span class="visibility-chip" [attr.data-visibility]="file.visibility">
+										{{ file.visibility | lowercase }}
+									</span>
 								</div>
 								<div class="file-meta">
 									<span>{{ file.sizeBytes | fileSize }}</span>
-									<span>{{ file.updatedAt | date: 'medium' }}</span>
+									<span class="file-date">{{ file.updatedAt | date: 'dd/MM/yy HH:mm' }}</span>
 								</div>
 							</div>
 						}
