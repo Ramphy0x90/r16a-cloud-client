@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
+	DashboardResponse,
 	File,
 	PageResponse,
 	SortDirection,
@@ -40,6 +41,11 @@ export class FileService {
 
 	getFile(id: string): Observable<File> {
 		return this.http.get<File>(`${this.apiUrl}/${id}`);
+	}
+
+	getDashboard(ownerId: string): Observable<DashboardResponse> {
+		const params = new HttpParams().set('ownerId', ownerId.toString());
+		return this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`, { params });
 	}
 
 	createFile(request: CreateFileRequest): Observable<File> {

@@ -45,3 +45,22 @@ export interface PageResponse<T> {
 	first: boolean;
 	last: boolean;
 }
+
+export interface DashboardMetrics {
+	uploadedFiles: number;
+	usedStorageBytes: number;
+	sharedFiles: number;
+}
+
+export interface RecentFileItem {
+	id: string;
+	name: string;
+	visibility: Visibility;
+	sizeBytes: number;
+	updatedAt: string;
+}
+
+export interface DashboardResponse {
+	metrics: DashboardMetrics;
+	recentFiles: RecentFileItem[];
+}

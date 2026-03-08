@@ -1,1 +1,58 @@
-<p>dashboard works!</p>
+<div class="page dashboard-page">
+	@if (dashboardState$ | async; as state) {
+		@if (state.loading) {
+			<div class="loading-container">
+				<div class="loading-spinner"></div>
+			</div>
+		} @else if (state.error) {
+			<div class="error-state">
+				<i class="bi bi-exclamation-triangle"></i>
+				<p>{{ state.error }}</p>
+			</div>
+		} @else if (state.data; as dashboard) {
+			<section class="metrics-grid">
+				<article class="metric-card">
+					<p class="metric-label">Files uploaded</p>
+					<p class="metric-value">{{ dashboard.metrics.uploadedFiles }}</p>
+				</article>
+				<article class="metric-card">
+					<p class="metric-label">Used storage</p>
+					<p class="metric-value">{{ dashboard.metrics.usedStorageBytes | fileSize }}</p>
+				</article>
+				<article class="metric-card">
+					<p class="metric-label">Shared files</p>
+					<p class="metric-value">{{ dashboard.metrics.sharedFiles }}</p>
+				</article>
+			</section>
+
+			<section class="recent-section">
+				<div class="recent-header">
+					<h2>Top 5 most recent files</h2>
+					<a routerLink="/files">View all files</a>
+				</div>
+
+				@if (dashboard.recentFiles.length === 0) {
+					<div class="empty-state">
+						<i class="bi bi-clock-history"></i>
+						<p>No files uploaded yet.</p>
+					</div>
+				} @else {
+					<div class="recent-list">
+						@for (file of dashboard.recentFiles; track file.id) {
+							<div class="recent-row">
+								<div class="file-main">
+									<p class="file-name">{{ file.name }}</p>
+									<span class="visibility-chip">{{ file.visibility }}</span>
+								</div>
+								<div class="file-meta">
+									<span>{{ file.sizeBytes | fileSize }}</span>
+									<span>{{ file.updatedAt | date: 'medium' }}</span>
+								</div>
+							</div>
+						}
+					</div>
+				}
+			</section>
+		}
+	}
+</div>
