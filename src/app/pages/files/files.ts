@@ -366,20 +366,9 @@ export class FilesPage implements OnDestroy {
 		if (!this.fileToShare || this.shareSaving) return;
 
 		const sharedWithIds = Array.from(this.selectedShareUserIds);
-		const nextVisibility =
-			sharedWithIds.length > 0
-				? 'SHARED'
-				: this.fileToShare.visibility === 'SHARED'
-					? 'PRIVATE'
-					: this.fileToShare.visibility;
-
 		this.shareSaving = true;
 		this.fileService
-			.updateFile(this.fileToShare.id, {
-				name: this.fileToShare.name,
-				sharedWithIds,
-				visibility: nextVisibility,
-			})
+			.updateFileSharing(this.fileToShare.id, sharedWithIds)
 			.pipe(take(1))
 			.subscribe({
 				next: () => {

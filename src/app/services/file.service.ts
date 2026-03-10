@@ -83,6 +83,10 @@ export class FileService {
 		return this.http.put<File>(`${this.apiUrl}/${id}`, request);
 	}
 
+	updateFileSharing(id: string, sharedWithIds: string[]): Observable<File> {
+		return this.http.patch<File>(`${this.apiUrl}/${id}/sharing`, { sharedWithIds });
+	}
+
 	deleteFile(id: string): Observable<void> {
 		return this.http.delete<void>(`${this.apiUrl}/${id}`);
 	}
