@@ -1,1 +1,68 @@
-<p>shared works!</p>
+<div class="page shared-page">
+	<div class="toolbar">
+		<h2 class="title">Shared with me</h2>
+
+		<file-options
+			[viewMode]="viewMode"
+			[sortField]="sortField"
+			[sortDirection]="sortDirection"
+			[selectionMode]="false"
+			(viewModeChange)="onViewModeChange($event)"
+			(sortFieldChange)="onSortFieldChange($event)"
+			(sortDirectionChange)="onSortDirectionChange($event)"
+		></file-options>
+	</div>
+
+	@if (((files$ | async) || []).length !== 0) {
+		@if (viewMode === 'grid') {
+			<grid-view
+				[files$]="files$"
+				[selectedFile]="selectedFile"
+				[selectionMode]="false"
+				[selectedFileIds]="emptySelectedFileIds"
+				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				(fileClick)="onFileClick($event)"
+				(imageVisible)="onImageVisible($event)"
+			></grid-view>
+		}
+
+		@if (viewMode === 'list') {
+			<list-view
+				[files$]="files$"
+				[selectedFile]="selectedFile"
+				[selectionMode]="false"
+				[selectedFileIds]="emptySelectedFileIds"
+				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				(fileClick)="onFileClick($event)"
+				(imageVisible)="onImageVisible($event)"
+			></list-view>
+		}
+	} @else {
+		<div class="empty-state">
+			<i class="bi bi-people"></i>
+			<h3>No shared files yet</h3>
+			<p>Files other users share with you will appear here</p>
+		</div>
+	}
+</div>
+
+@if (showImagePreviewModal) {
+	<div class="modal-overlay" (click)="closeImagePreview()">
+		<div class="modal image-modal" (click)="$event.stopPropagation()">
+			<div class="image-modal-header">
+				<h3 class="modal-title">{{ imagePreviewName }}</h3>
+				<button class="modal-btn cancel-btn" (click)="closeImagePreview()">Close</button>
+			</div>
+
+			<div class="image-modal-content">
+				@if (imagePreviewUrl) {
+					<img class="image-preview" [src]="imagePreviewUrl" [alt]="imagePreviewName ?? 'Shared image'" />
+				} @else if (imagePreviewLoading) {
+					<p class="modal-text">Loading image...</p>
+				} @else {
+					<p class="modal-text">Image preview unavailable.</p>
+				}
+			</div>
+		</div>
+	</div>
+}

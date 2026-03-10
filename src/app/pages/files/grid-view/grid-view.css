@@ -60,6 +60,16 @@
 	white-space: nowrap;
 }
 
+.shared-indicator {
+	position: absolute;
+	right: 6px;
+	bottom: 6px;
+	font-size: 0.68rem;
+	color: var(--colour-primary);
+	opacity: 0.85;
+	line-height: 1;
+}
+
 .file-card-meta {
 	font-size: 0.75rem;
 	opacity: 0.5;

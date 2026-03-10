@@ -26,6 +26,7 @@ import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
+import { UserResponse } from '../../types/user';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
@@ -104,10 +105,16 @@ export class FilesPage implements OnDestroy {
 	showRenameModal = false;
 	showDeleteConfirm = false;
 	showBulkDeleteConfirm = false;
+	showShareModal = false;
 
 	selectedFile: File | null = null;
 	fileToDelete: File | null = null;
 	fileToRename: File | null = null;
+	fileToShare: File | null = null;
+	shareCandidates: UserResponse[] = [];
+	selectedShareUserIds = new Set<string>();
+	shareUsersLoading = false;
+	shareSaving = false;
 
 	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewState>({
 		show: false,
@@ -328,6 +335,68 @@ export class FilesPage implements OnDestroy {
 		});
 	}
 
+	openShareSelected(): void {
+		this.files$.pipe(take(1)).subscribe((files) => {
+			const selectedId = Array.from(this.selectedFileIds)[0];
+			const file = files.find((f) => f.id === selectedId);
+			if (!file) return;
+
+			this.fileToShare = file;
+			this.selectedShareUserIds = new Set(file.sharedWithIds);
+			this.showShareModal = true;
+			this.loadShareCandidates();
+		});
+	}
+
+	toggleSharedUser(userId: string): void {
+		const next = new Set(this.selectedShareUserIds);
+		if (next.has(userId)) {
+			next.delete(userId);
+		} else {
+			next.add(userId);
+		}
+		this.selectedShareUserIds = next;
+	}
+
+	isSharedUserSelected(userId: string): boolean {
+		return this.selectedShareUserIds.has(userId);
+	}
+
+	saveShareSettings(): void {
+		if (!this.fileToShare || this.shareSaving) return;
+
+		const sharedWithIds = Array.from(this.selectedShareUserIds);
+		const nextVisibility =
+			sharedWithIds.length > 0
+				? 'SHARED'
+				: this.fileToShare.visibility === 'SHARED'
+					? 'PRIVATE'
+					: this.fileToShare.visibility;
+
+		this.shareSaving = true;
+		this.fileService
+			.updateFile(this.fileToShare.id, {
+				name: this.fileToShare.name,
+				sharedWithIds,
+				visibility: nextVisibility,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: () => {
+					this.closeModals();
+					if (this.selectionMode) this.cancelSelection();
+					this.refreshCurrentFolderAfterMutation();
+				},
+				error: (err) => {
+					console.error('Failed to update sharing:', err);
+					this.shareSaving = false;
+				},
+				complete: () => {
+					this.shareSaving = false;
+				},
+			});
+	}
+
 	renameFile(): void {
 		if (!this.renameName.trim() || !this.fileToRename) return;
 
@@ -436,9 +505,15 @@ export class FilesPage implements OnDestroy {
 		this.showRenameModal = false;
 		this.showDeleteConfirm = false;
 		this.showBulkDeleteConfirm = false;
+		this.showShareModal = false;
 		this.closeImagePreviewModal();
 		this.fileToDelete = null;
 		this.fileToRename = null;
+		this.fileToShare = null;
+		this.shareCandidates = [];
+		this.selectedShareUserIds = new Set();
+		this.shareUsersLoading = false;
+		this.shareSaving = false;
 	}
 
 	closeImagePreviewModal(): void {
@@ -498,6 +573,28 @@ export class FilesPage implements OnDestroy {
 	private invalidateCurrentFolderFilesCache(): void {
 		this.ownerId$.pipe(take(1)).subscribe((ownerId) => {
 			this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
+		});
+	}
+
+	private loadShareCandidates(): void {
+		if (!this.fileToShare) return;
+		this.shareUsersLoading = true;
+
+		forkJoin({
+			currentUser: this.userService.currentUser$.pipe(take(1)),
+			usersPage: this.userService.getUsers().pipe(take(1)),
+		}).subscribe({
+			next: ({ currentUser, usersPage }) => {
+				this.shareCandidates = usersPage.content.filter(
+					(user) => user.id !== currentUser.id && user.id !== this.fileToShare?.ownerId,
+				);
+				this.shareUsersLoading = false;
+			},
+			error: (err) => {
+				console.error('Failed to load users for sharing:', err);
+				this.shareCandidates = [];
+				this.shareUsersLoading = false;
+			},
 		});
 	}
 

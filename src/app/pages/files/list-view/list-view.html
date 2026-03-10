@@ -39,6 +39,10 @@
 			<div class="list-cell date-cell">
 				{{ file.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
 			</div>
+
+			@if (file.visibility === 'SHARED' || file.sharedWithIds.length > 0) {
+				<i class="bi bi-people-fill shared-indicator" title="Shared file"></i>
+			}
 		</div>
 	}
 </div>

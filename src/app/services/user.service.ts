@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, filter, shareReplay, switchMap, take } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
-import { UserResponse } from '../types/user';
+import { UserPageResponse, UserResponse } from '../types/user';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -21,4 +21,9 @@ export class UserService {
 		switchMap(() => this.http.get<UserResponse>(`${this.apiUrl}/me`)),
 		shareReplay(1),
 	);
+
+	getUsers(page = 0, size = 200): Observable<UserPageResponse> {
+		const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+		return this.http.get<UserPageResponse>(this.apiUrl, { params });
+	}
 }

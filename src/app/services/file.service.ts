@@ -39,6 +39,21 @@ export class FileService {
 		return this.http.get<PageResponse<File>>(this.apiUrl, { params });
 	}
 
+	getFilesSharedWithMe(
+		sortField: SortField = 'name',
+		sortDirection: SortDirection = 'asc',
+		page = 0,
+		size = 50,
+	): Observable<PageResponse<File>> {
+		const params = new HttpParams()
+			.set('page', page.toString())
+			.set('size', size.toString())
+			.append('sort', 'isDirectory,desc')
+			.append('sort', `${sortField},${sortDirection}`);
+
+		return this.http.get<PageResponse<File>>(`${this.apiUrl}/shared-with-me`, { params });
+	}
+
 	getFile(id: string): Observable<File> {
 		return this.http.get<File>(`${this.apiUrl}/${id}`);
 	}

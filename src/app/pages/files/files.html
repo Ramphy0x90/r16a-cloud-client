@@ -17,6 +17,11 @@
 				<span class="selection-count">{{ selectedFileIds.size }} selected</span>
 
 				@if (selectedFileIds.size === 1) {
+					<button class="action-btn" (click)="openShareSelected()" title="Share">
+						<i class="bi bi-share"></i>
+						<span class="btn-label">Share</span>
+					</button>
+
 					<button class="action-btn" (click)="openRenameSelected()" title="Rename">
 						<i class="bi bi-pencil"></i>
 						<span class="btn-label">Rename</span>
@@ -133,6 +138,49 @@
 					[disabled]="!newFolderName.trim()"
 				>
 					Create
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Share Modal -->
+@if (showShareModal) {
+	<div class="modal-overlay" (click)="closeModals()">
+		<div class="modal" (click)="$event.stopPropagation()">
+			<h3 class="modal-title">Share {{ fileToShare?.isDirectory ? 'folder' : 'file' }}</h3>
+			<p class="modal-text">
+				Select who can access
+				<strong>{{ fileToShare?.name }}</strong
+				>.
+			</p>
+
+			@if (shareUsersLoading) {
+				<p class="modal-text">Loading users...</p>
+			} @else if (shareCandidates.length === 0) {
+				<p class="modal-text">No users available to share with.</p>
+			} @else {
+				<div class="share-users-list">
+					@for (user of shareCandidates; track user.id) {
+						<label class="share-user-item">
+							<input
+								type="checkbox"
+								[checked]="isSharedUserSelected(user.id)"
+								(change)="toggleSharedUser(user.id)"
+							/>
+							<div class="share-user-meta">
+								<span class="share-user-name">{{ user.displayName || user.username }}</span>
+								<span class="share-user-email">{{ user.email }}</span>
+							</div>
+						</label>
+					}
+				</div>
+			}
+
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
+				<button class="modal-btn confirm-btn" (click)="saveShareSettings()" [disabled]="shareUsersLoading || shareSaving">
+					{{ shareSaving ? 'Saving...' : 'Save' }}
 				</button>
 			</div>
 		</div>
