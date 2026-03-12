@@ -34,7 +34,7 @@ export class App implements OnInit, OnDestroy {
 		this.oidc.checkAuth().subscribe();
 
 		this.userService.currentUser$.pipe(takeUntil(this.destroyed$)).subscribe((user) => {
-			this.store.dispatch(changeTheme({ theme: user.preferredTheme }));
+			this.store.dispatch(changeTheme({ theme: user.preferences.preferredTheme }));
 		});
 
 		this.currentTheme$.pipe(takeUntil(this.destroyed$)).subscribe((currentTheme) => {

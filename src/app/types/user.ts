@@ -1,13 +1,17 @@
 import { Theme } from './theme';
 
+export interface UserPreferences {
+	preferredTheme: Theme;
+	encryptFilesByDefault: boolean;
+}
+
 export interface UserResponse {
 	id: string;
 	username: string;
 	email: string;
 	displayName: string;
 	role: string;
-	preferredTheme: Theme;
-	encryptFilesByDefault: boolean;
+	preferences: UserPreferences;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -23,6 +27,5 @@ export interface UserPageResponse {
 }
 
 export interface UpdateMyPreferencesRequest {
-	preferredTheme: Theme;
-	encryptFilesByDefault: boolean;
+	preferences: Partial<UserPreferences>;
 }

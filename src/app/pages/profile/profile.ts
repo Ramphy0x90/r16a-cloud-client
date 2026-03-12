@@ -64,14 +64,16 @@ export class ProfilePage implements OnInit, OnDestroy {
 
 		this.userService
 			.updateCurrentUserPreferences({
-				preferredTheme: this.preferredTheme,
-				encryptFilesByDefault: this.encryptFilesByDefault,
+				preferences: {
+					preferredTheme: this.preferredTheme,
+					encryptFilesByDefault: this.encryptFilesByDefault,
+				},
 			})
 			.pipe(take(1))
 			.subscribe({
 				next: (user) => {
 					this.setProfileState(user);
-					this.store.dispatch(changeTheme({ theme: user.preferredTheme }));
+					this.store.dispatch(changeTheme({ theme: user.preferences.preferredTheme }));
 					this.successMessage = 'Preferences saved successfully.';
 					this.saving = false;
 				},
@@ -85,8 +87,8 @@ export class ProfilePage implements OnInit, OnDestroy {
 	private setProfileState(user: UserResponse): void {
 		this.displayName = user.displayName;
 		this.username = user.username;
-		this.preferredTheme = user.preferredTheme;
-		this.encryptFilesByDefault = user.encryptFilesByDefault;
+		this.preferredTheme = user.preferences.preferredTheme;
+		this.encryptFilesByDefault = user.preferences.encryptFilesByDefault;
 		this.loading = false;
 		this.cdr.markForCheck();
 	}
