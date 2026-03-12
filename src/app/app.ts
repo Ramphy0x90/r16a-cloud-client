@@ -9,6 +9,8 @@ import { selectTheme } from './store/app/app.selector';
 import { AuthService } from './services/auth.service';
 import { CommonModule } from '@angular/common';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { UserService } from './services/user.service';
+import { changeTheme } from './store/app/app.actions';
 
 @Component({
 	selector: 'app-root',
@@ -22,6 +24,7 @@ export class App implements OnInit, OnDestroy {
 	private readonly oidc = inject(OidcSecurityService);
 	private readonly store: Store = inject(Store);
 	private readonly auth = inject(AuthService);
+	private readonly userService = inject(UserService);
 
 	readonly isAuthenticated$ = this.auth.isAuthenticated$;
 	readonly currentTheme$: Observable<Theme> = this.store.select(selectTheme);
@@ -29,6 +32,10 @@ export class App implements OnInit, OnDestroy {
 
 	ngOnInit(): void {
 		this.oidc.checkAuth().subscribe();
+
+		this.userService.currentUser$.pipe(takeUntil(this.destroyed$)).subscribe((user) => {
+			this.store.dispatch(changeTheme({ theme: user.preferredTheme }));
+		});
 
 		this.currentTheme$.pipe(takeUntil(this.destroyed$)).subscribe((currentTheme) => {
 			document.body.classList.remove('light-theme', 'dark-theme');

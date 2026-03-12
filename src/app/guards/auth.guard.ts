@@ -7,7 +7,7 @@ export const authGuard: CanActivateFn = () => {
 	const oidc = inject(OidcSecurityService);
 	const router = inject(Router);
 
-	return oidc.isAuthenticated$.pipe(
+	return oidc.checkAuth().pipe(
 		take(1),
 		map(({ isAuthenticated }) => isAuthenticated || router.createUrlTree(['/login'])),
 	);

@@ -1,1 +1,71 @@
-<p>profile works!</p>
+<div class="page profile-page">
+	@if (loading) {
+		<div class="loading-container">
+			<div class="loading-spinner"></div>
+		</div>
+	} @else {
+		<section class="profile-card">
+			<div class="profile-identity">
+				<div class="profile-avatar">{{ userInitials }}</div>
+				<div class="profile-meta">
+					<span class="profile-display-name">{{ displayName }}</span>
+					<span class="profile-username">&#64;{{ username }}</span>
+				</div>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="identity-grid">
+				<div class="field-group">
+					<label>Display name</label>
+					<input type="text" [value]="displayName" disabled />
+				</div>
+
+				<div class="field-group">
+					<label>Username</label>
+					<input type="text" [value]="username" disabled />
+				</div>
+			</div>
+		</section>
+
+		<section class="profile-card">
+			<div class="section-header">
+				<h2>Preferences</h2>
+				<p>Customize your default experience.</p>
+			</div>
+
+			<div class="preferences-grid">
+				<div class="field-group">
+					<label for="theme">Default theme</label>
+					<select id="theme" [(ngModel)]="preferredTheme">
+						@for (theme of availableThemes; track theme) {
+							<option [ngValue]="theme">{{ theme | titlecase }}</option>
+						}
+					</select>
+				</div>
+
+				<div class="field-group toggle-group">
+					<div class="toggle-label-group">
+						<span class="toggle-label">Encrypt files by default</span>
+						<span class="toggle-description">Uploaded files will be encrypted automatically</span>
+					</div>
+					<toggle-switch [(ngModel)]="encryptFilesByDefault"></toggle-switch>
+				</div>
+			</div>
+
+			@if (errorMessage) {
+				<p class="feedback error">{{ errorMessage }}</p>
+			}
+
+			@if (successMessage) {
+				<p class="feedback success">{{ successMessage }}</p>
+			}
+
+			<div class="card-actions">
+				<button class="save-btn" (click)="savePreferences()" [disabled]="saving">
+					{{ saving ? 'Saving...' : 'Save preferences' }}
+				</button>
+			</div>
+		</section>
+	}
+</div>
