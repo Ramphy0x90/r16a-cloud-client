@@ -7,8 +7,8 @@ import {
 	combineLatest,
 	concat,
 	filter,
+	firstValueFrom,
 	forkJoin,
-	lastValueFrom,
 	map,
 	mergeMap,
 	Observable,
@@ -267,7 +267,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	async onFileSelected(event: Event): Promise<void> {
-		const ownerId = await lastValueFrom(this.ownerId$);
+		const ownerId = await firstValueFrom(this.ownerId$);
 		const input = event.target as HTMLInputElement;
 
 		if (!input.files?.length || ownerId === null) return;
@@ -295,7 +295,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	async createFolder(): Promise<void> {
-		const ownerId = await lastValueFrom(this.ownerId$);
+		const ownerId = await firstValueFrom(this.ownerId$);
 
 		if (!this.newFolderName.trim() || ownerId === null) return;
 
