@@ -2,15 +2,17 @@
 	<div class="toolbar">
 		<h2 class="title">Shared with me</h2>
 
-		<file-options
-			[viewMode]="viewMode"
-			[sortField]="sortField"
-			[sortDirection]="sortDirection"
-			[selectionMode]="false"
-			(viewModeChange)="onViewModeChange($event)"
-			(sortFieldChange)="onSortFieldChange($event)"
-			(sortDirectionChange)="onSortDirectionChange($event)"
-		></file-options>
+		<div class="toolbar-actions">
+			<file-options
+				[viewMode]="viewMode"
+				[sortField]="sortField"
+				[sortDirection]="sortDirection"
+				[selectionMode]="false"
+				(viewModeChange)="onViewModeChange($event)"
+				(sortFieldChange)="onSortFieldChange($event)"
+				(sortDirectionChange)="onSortDirectionChange($event)"
+			></file-options>
+		</div>
 	</div>
 
 	@if (((files$ | async) || []).length !== 0) {
@@ -47,18 +49,22 @@
 </div>
 
 @if (showImagePreviewModal) {
-	<div class="modal-overlay" (click)="closeImagePreview()">
-		<div class="modal image-modal" (click)="$event.stopPropagation()">
+	<div class="modal-overlay image-modal-overlay" (click)="closeImagePreview()">
+		<div class="image-modal" (click)="$event.stopPropagation()">
 			<div class="image-modal-header">
 				<h3 class="modal-title">{{ imagePreviewName }}</h3>
-				<button class="modal-btn cancel-btn" (click)="closeImagePreview()">Close</button>
+				<button class="icon-btn image-modal-close" (click)="closeImagePreview()" aria-label="Close image">
+					<i class="bi bi-x-lg"></i>
+				</button>
 			</div>
 
 			<div class="image-modal-content">
 				@if (imagePreviewUrl) {
-					<img class="image-preview" [src]="imagePreviewUrl" [alt]="imagePreviewName ?? 'Shared image'" />
+					<img class="image-modal-preview" [src]="imagePreviewUrl" [alt]="imagePreviewName ?? 'Shared image'" />
 				} @else if (imagePreviewLoading) {
-					<p class="modal-text">Loading image...</p>
+					<div class="loading-container image-modal-loading">
+						<div class="loading-spinner"></div>
+					</div>
 				} @else {
 					<p class="modal-text">Image preview unavailable.</p>
 				}
