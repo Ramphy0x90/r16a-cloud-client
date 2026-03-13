@@ -1,0 +1,13 @@
+@if (dataStruct && dataSource) {
+	<article class="metric-card" [ngStyle]="{ '--metric-accent': dataStruct.accentColour }">
+		<div class="metric-top">
+			<p class="metric-label">{{ dataStruct.title }}</p>
+
+			<div class="metric-icon">
+				<i class="bi" [ngClass]="dataStruct.icon"></i>
+			</div>
+		</div>
+
+		<p class="metric-value">{{ dataStruct.data(dataSource) }}</p>
+	</article>
+}

@@ -1,0 +1,23 @@
+.loading-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	min-height: 8rem;
+	opacity: 0.5;
+}
+
+.loading-spinner {
+	width: 1.5rem;
+	height: 1.5rem;
+	border: 2px solid color-mix(in srgb, var(--colour-foreground) 15%, transparent);
+	border-top-color: var(--colour-primary);
+	border-radius: 50%;
+	animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

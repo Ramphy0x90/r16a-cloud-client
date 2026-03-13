@@ -7,6 +7,9 @@ import { IconFromExtensionPipe } from '../../pipes/icon-from-extension-pipe';
 import { FileService } from '../../services/file.service';
 import { UserService } from '../../services/user.service';
 import { DashboardResponse } from '../../types/file';
+import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
+import { MetricCard } from './metric-card/metric-card';
+import { MetricData } from '../../types/dashboard';
 
 interface DashboardState {
 	loading: boolean;
@@ -16,13 +19,21 @@ interface DashboardState {
 
 @Component({
 	selector: 'dashboard-page',
-	imports: [CommonModule, RouterLink, FileSizePipe, IconFromExtensionPipe],
+	imports: [
+		CommonModule,
+		RouterLink,
+		FileSizePipe,
+		IconFromExtensionPipe,
+		LoadingSpinner,
+		MetricCard,
+	],
 	templateUrl: './dashboard.html',
 	styleUrl: './dashboard.css',
 })
 export class DashboardPage {
 	private readonly fileService = inject(FileService);
 	private readonly userService = inject(UserService);
+	private readonly sizePipe = inject(FileSizePipe);
 
 	readonly dashboardState$: Observable<DashboardState> = this.userService.currentUser$.pipe(
 		map((user) => user.id),
@@ -41,4 +52,25 @@ export class DashboardPage {
 		),
 		shareReplay({ bufferSize: 1, refCount: true }),
 	);
+
+	readonly metrics: MetricData[] = [
+		{
+			icon: 'bi-cloud-upload',
+			accentColour: 'var(--colour-primary)',
+			title: 'Files uploaded',
+			data: (data) => data['uploadedFiles'],
+		},
+		{
+			icon: 'bi-hdd',
+			accentColour: '#f59e0b',
+			title: 'Used storage',
+			data: (data) => this.sizePipe.transform(data['usedStorageBytes']),
+		},
+		{
+			icon: 'bi-share',
+			accentColour: '#8b5cf6',
+			title: 'Shared files',
+			data: (data) => data['sharedFiles'],
+		},
+	];
 }

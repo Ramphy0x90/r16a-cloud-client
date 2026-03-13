@@ -11,95 +11,6 @@
 	gap: var(--space-2);
 }
 
-.metric-card {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	gap: var(--space-3);
-	padding: var(--space-3);
-	border-radius: var(--radius);
-	background: var(--colour-card);
-	box-shadow: 0px 10px 8px -8px rgba(0, 0, 0, 0.1);
-	overflow: hidden;
-	min-height: 110px;
-}
-
-.metric-card::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	background: linear-gradient(
-		135deg,
-		color-mix(in srgb, var(--metric-accent, var(--colour-primary)) 12%, transparent),
-		transparent 60%
-	);
-	pointer-events: none;
-}
-
-.metric-card::after {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 3px;
-	background: var(--metric-accent, var(--colour-primary));
-	border-radius: var(--radius) var(--radius) 0 0;
-}
-
-.metric-card:nth-child(1) { --metric-accent: var(--colour-primary); }
-.metric-card:nth-child(2) { --metric-accent: #f59e0b; }
-.metric-card:nth-child(3) { --metric-accent: #8b5cf6; }
-
-.metric-top {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-
-.metric-label {
-	margin: 0;
-	font-size: 0.8rem;
-	opacity: 0.6;
-	font-weight: 500;
-}
-
-.metric-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 2rem;
-	height: 2rem;
-	border-radius: var(--radius);
-	background: color-mix(in srgb, var(--metric-accent, var(--colour-primary)) 15%, transparent);
-	color: var(--metric-accent, var(--colour-primary));
-	flex-shrink: 0;
-}
-
-.metric-icon i {
-	font-size: 1rem;
-}
-
-.metric-value {
-	margin: 0;
-	font-size: 2rem;
-	font-weight: 700;
-	line-height: 1;
-	letter-spacing: -0.02em;
-}
-
-@media (min-width: 768px) {
-	.metric-card {
-		min-height: 130px;
-		padding: var(--space-4) var(--space-3);
-	}
-
-	.metric-value {
-		font-size: 2.4rem;
-	}
-}
-
 /* ── Recent files ── */
 
 .recent-section {
@@ -180,6 +91,8 @@
 }
 
 .file-name {
+	width: 0;
+	flex: 1 1 0;
 	margin: 0;
 	font-size: 0.875rem;
 	font-weight: 500;
@@ -223,7 +136,6 @@
 
 /* ── States ── */
 
-.loading-container,
 .error-state,
 .empty-state {
 	display: flex;
@@ -232,21 +144,6 @@
 	gap: var(--space-1);
 	min-height: 8rem;
 	opacity: 0.5;
-}
-
-.loading-spinner {
-	width: 1.5rem;
-	height: 1.5rem;
-	border: 2px solid color-mix(in srgb, var(--colour-foreground) 15%, transparent);
-	border-top-color: var(--colour-primary);
-	border-radius: 50%;
-	animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin {
-	to {
-		transform: rotate(360deg);
-	}
 }
 
 /* ── Responsive ── */

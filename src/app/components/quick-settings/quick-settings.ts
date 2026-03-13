@@ -16,8 +16,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class QuickSettings {
 	private readonly el = inject(ElementRef);
-
 	private readonly store: Store = inject(Store);
+
 	readonly currentThemeBoolean$: Observable<boolean> = this.store
 		.select(selectTheme)
 		.pipe(map((currentTheme) => currentTheme === 'light'));

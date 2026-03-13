@@ -1,9 +1,7 @@
 <div class="page dashboard-page">
 	@if (dashboardState$ | async; as state) {
 		@if (state.loading) {
-			<div class="loading-container">
-				<div class="loading-spinner"></div>
-			</div>
+			<loading-spinner></loading-spinner>
 		} @else if (state.error) {
 			<div class="error-state">
 				<i class="bi bi-exclamation-triangle"></i>
@@ -11,27 +9,9 @@
 			</div>
 		} @else if (state.data; as dashboard) {
 			<section class="metrics-grid">
-				<article class="metric-card">
-					<div class="metric-top">
-						<p class="metric-label">Files uploaded</p>
-						<div class="metric-icon"><i class="bi bi-cloud-upload"></i></div>
-					</div>
-					<p class="metric-value">{{ dashboard.metrics.uploadedFiles }}</p>
-				</article>
-				<article class="metric-card">
-					<div class="metric-top">
-						<p class="metric-label">Used storage</p>
-						<div class="metric-icon"><i class="bi bi-hdd"></i></div>
-					</div>
-					<p class="metric-value">{{ dashboard.metrics.usedStorageBytes | fileSize }}</p>
-				</article>
-				<article class="metric-card">
-					<div class="metric-top">
-						<p class="metric-label">Shared files</p>
-						<div class="metric-icon"><i class="bi bi-share"></i></div>
-					</div>
-					<p class="metric-value">{{ dashboard.metrics.sharedFiles }}</p>
-				</article>
+				@for (metric of metrics; track metric.title) {
+					<metric-card [dataStruct]="metric" [dataSource]="dashboard.metrics"></metric-card>
+				}
 			</section>
 
 			<section class="recent-section">

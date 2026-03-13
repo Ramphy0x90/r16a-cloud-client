@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { StorageUsage } from './storage-usage';
+import { MetricCard } from './metric-card';
 
-describe('StorageUsage', () => {
-  let component: StorageUsage;
-  let fixture: ComponentFixture<StorageUsage>;
+describe('MetricCard', () => {
+  let component: MetricCard;
+  let fixture: ComponentFixture<MetricCard>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [StorageUsage]
+      imports: [MetricCard]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(StorageUsage);
+    fixture = TestBed.createComponent(MetricCard);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
