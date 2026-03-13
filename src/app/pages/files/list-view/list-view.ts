@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { File } from '../../../types/file';
 import { IconFromExtensionPipe } from '../../../pipes/icon-from-extension-pipe';
 import { InViewportDirective } from '../../../directives/in-viewport.directive';
+import { FileService } from '../../../services/file.service';
 
 @Component({
 	selector: 'list-view',
@@ -24,6 +25,8 @@ export class ListView {
 	@Output() fileSelect = new EventEmitter<File>();
 	@Output() imageVisible = new EventEmitter<File>();
 
+	private readonly fileService = inject(FileService);
+
 	onFileAction(file: File): void {
 		if (this.selectionMode) {
 			this.fileSelect.emit(file);
@@ -33,8 +36,7 @@ export class ListView {
 	}
 
 	isImageFile(file: File): boolean {
-		if (file.isDirectory) return false;
-		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+		return this.fileService.isImageFile(file);
 	}
 
 	getImagePreviewUrl(file: File): string | null {

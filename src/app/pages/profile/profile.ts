@@ -8,10 +8,11 @@ import { changeTheme } from '../../store/app/app.actions';
 import { Theme } from '../../types/theme';
 import { ToggleSwitch } from '../../components/toggle-switch/toggle-switch';
 import { UserResponse } from '../../types/user';
+import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
 
 @Component({
 	selector: 'profile-page',
-	imports: [CommonModule, FormsModule, ToggleSwitch],
+	imports: [CommonModule, FormsModule, ToggleSwitch, LoadingSpinner],
 	templateUrl: './profile.html',
 	styleUrl: './profile.css',
 })
