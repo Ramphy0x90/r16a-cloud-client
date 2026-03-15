@@ -7,6 +7,7 @@ import {
 	combineLatest,
 	concat,
 	filter,
+	finalize,
 	firstValueFrom,
 	forkJoin,
 	map,
@@ -69,8 +70,25 @@ export class FilesPage implements OnDestroy {
 	private readonly imagePreviewOpen$ = new Subject<File>();
 	private readonly imagePreviewClose$ = new Subject<void>();
 
+	private readonly thumbnailPreviewCache = new Map<string, CachedImagePreview>();
+	private readonly thumbnailPreviewInFlight = new Map<
+		string,
+		Observable<[string, string] | null>
+	>();
+	private readonly fullImagePreviewCache = new Map<string, string>();
+
 	private readonly thumbnailPreviewTtlMs = 5 * 60_000;
 	private readonly maxThumbnailCacheSize = 400;
+
+	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewState>({
+		show: false,
+		fileName: null,
+		fileId: null,
+		url: null,
+		loading: false,
+	});
+	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
+	readonly emptyImagePreviewMap = new Map<string, string>();
 
 	readonly files$: Observable<File[]> = combineLatest([
 		this.triggerFilesFetch$.pipe(startWith(void 0)),
@@ -79,7 +97,12 @@ export class FilesPage implements OnDestroy {
 		filter(([_, ownerId]) => ownerId != null),
 		switchMap(([_, ownerId]) => {
 			const parentId = this.currentFolder?.id ?? null;
-			return this.filesCacheService.getFilesCached(ownerId, parentId, this.sortField, this.sortDirection);
+			return this.filesCacheService.getFilesCached(
+				ownerId,
+				parentId,
+				this.sortField,
+				this.sortDirection,
+			);
 		}),
 		shareReplay({ bufferSize: 1, refCount: true }),
 		takeUntil(this.destroy$),
@@ -111,24 +134,14 @@ export class FilesPage implements OnDestroy {
 	fileToDelete: File | null = null;
 	fileToRename: File | null = null;
 	fileToShare: File | null = null;
-	shareCandidates: UserResponse[] = [];
 	selectedShareUserIds = new Set<string>();
-	shareUsersLoading = false;
 	shareSaving = false;
 
-	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewState>({
-		show: false,
-		fileName: null,
-		fileId: null,
-		url: null,
-		loading: false,
-	});
-	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
-
-	private readonly thumbnailPreviewCache = new Map<string, CachedImagePreview>();
-	private readonly thumbnailPreviewInFlight = new Map<string, Observable<[string, string] | null>>();
-	private readonly fullImagePreviewCache = new Map<string, string>();
-	readonly emptyImagePreviewMap = new Map<string, string>();
+	private readonly shareUsersLoadingSubject = new BehaviorSubject<boolean>(false);
+	readonly shareUsersLoading$: Observable<boolean> = this.shareUsersLoadingSubject.asObservable();
+	private readonly shareCandidatesSubject = new BehaviorSubject<UserResponse[]>([]);
+	readonly shareCandidates$: Observable<UserResponse[]> =
+		this.shareCandidatesSubject.asObservable();
 
 	newFolderName = '';
 	renameName = '';
@@ -499,9 +512,9 @@ export class FilesPage implements OnDestroy {
 		this.fileToDelete = null;
 		this.fileToRename = null;
 		this.fileToShare = null;
-		this.shareCandidates = [];
+		this.shareCandidatesSubject.next([]);
 		this.selectedShareUserIds = new Set();
-		this.shareUsersLoading = false;
+		this.shareUsersLoadingSubject.next(false);
 		this.shareSaving = false;
 	}
 
@@ -566,25 +579,30 @@ export class FilesPage implements OnDestroy {
 	}
 
 	private loadShareCandidates(): void {
-		if (!this.fileToShare) return;
-		this.shareUsersLoading = true;
+		const fileToShare = this.fileToShare;
+		if (!fileToShare) return;
+		this.shareUsersLoadingSubject.next(true);
 
 		forkJoin({
 			currentUser: this.userService.currentUser$.pipe(take(1)),
 			usersPage: this.userService.getUsers().pipe(take(1)),
-		}).subscribe({
-			next: ({ currentUser, usersPage }) => {
-				this.shareCandidates = usersPage.content.filter(
-					(user) => user.id !== currentUser.id && user.id !== this.fileToShare?.ownerId,
-				);
-				this.shareUsersLoading = false;
-			},
-			error: (err) => {
-				console.error('Failed to load users for sharing:', err);
-				this.shareCandidates = [];
-				this.shareUsersLoading = false;
-			},
-		});
+		})
+			.pipe(
+				map(({ currentUser, usersPage }) =>
+					usersPage.content.filter(
+						(user) => user.id !== currentUser.id && user.id !== fileToShare.ownerId,
+					),
+				),
+				catchError((error) => {
+					console.error('Failed to load users for sharing:', error);
+					return of([]);
+				}),
+				finalize(() => {
+					this.shareUsersLoadingSubject.next(false);
+				}),
+				take(1),
+			)
+			.subscribe((users) => this.shareCandidatesSubject.next(users));
 	}
 
 	private queueImagePreview(file: File): void {

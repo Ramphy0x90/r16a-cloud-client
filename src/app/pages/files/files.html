@@ -155,13 +155,13 @@
 				>.
 			</p>
 
-			@if (shareUsersLoading) {
+			@if (shareUsersLoading$ | async) {
 				<p class="modal-text">Loading users...</p>
-			} @else if (shareCandidates.length === 0) {
+			} @else if (((shareCandidates$ | async) || []).length === 0) {
 				<p class="modal-text">No users available to share with.</p>
 			} @else {
 				<div class="share-users-list">
-					@for (user of shareCandidates; track user.id) {
+					@for (user of shareCandidates$ | async; track user.id) {
 						<label class="share-user-item">
 							<input
 								type="checkbox"
@@ -179,7 +179,11 @@
 
 			<div class="modal-actions">
 				<button class="modal-btn cancel-btn" (click)="closeModals()">Cancel</button>
-				<button class="modal-btn confirm-btn" (click)="saveShareSettings()" [disabled]="shareUsersLoading || shareSaving">
+				<button
+					class="modal-btn confirm-btn"
+					(click)="saveShareSettings()"
+					[disabled]="(shareUsersLoading$ | async) || shareSaving"
+				>
 					{{ shareSaving ? 'Saving...' : 'Save' }}
 				</button>
 			</div>
@@ -194,7 +198,11 @@
 			<div class="image-modal" (click)="$event.stopPropagation()">
 				<div class="image-modal-header">
 					<h3 class="modal-title">{{ previewState.fileName }}</h3>
-					<button class="icon-btn image-modal-close" (click)="closeImagePreviewModal()" aria-label="Close image">
+					<button
+						class="icon-btn image-modal-close"
+						(click)="closeImagePreviewModal()"
+						aria-label="Close image"
+					>
 						<i class="bi bi-x-lg"></i>
 					</button>
 				</div>
