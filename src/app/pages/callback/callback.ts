@@ -2,12 +2,17 @@ import { Component, inject, OnInit, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { filter, take } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
 
 @Component({
 	selector: 'callback-page',
+	imports: [LoadingSpinner],
 	template: `
 		<div class="callback-container">
-			<p>Signing you in...</p>
+			<span>
+				Signing you in
+				<loading-spinner></loading-spinner>
+			</span>
 		</div>
 	`,
 	styles: `
