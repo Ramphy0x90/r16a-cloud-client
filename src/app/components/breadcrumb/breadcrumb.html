@@ -1,0 +1,10 @@
+<div class="breadcrumbs">
+	<button class="breadcrumb-item" (click)="onRootClick()">Home</button>
+
+	@for (crumb of items; track crumb.id; let i = $index) {
+		<span class="breadcrumb-separator">/</span>
+		<button class="breadcrumb-item" (click)="onItemClick(i)">
+			{{ crumb.name }}
+		</button>
+	}
+</div>

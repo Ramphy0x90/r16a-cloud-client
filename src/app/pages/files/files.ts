@@ -31,6 +31,7 @@ import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '..
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
+import { Breadcrumb } from '../../components/breadcrumb/breadcrumb';
 import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
 
 interface CachedImagePreview {
@@ -41,7 +42,7 @@ interface CachedImagePreview {
 
 @Component({
 	selector: 'files-page',
-	imports: [CommonModule, FormsModule, ListView, GridView, FileOptions, ImagePreviewModal],
+	imports: [CommonModule, FormsModule, ListView, GridView, FileOptions, Breadcrumb, ImagePreviewModal],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
 })

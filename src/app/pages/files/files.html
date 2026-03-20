@@ -1,16 +1,11 @@
 <div class="page files-page">
 	<!-- Toolbar -->
 	<div class="toolbar">
-		<div class="breadcrumbs">
-			<button class="breadcrumb-item" (click)="navigateToRoot()">Home</button>
-
-			@for (crumb of breadcrumbs; track crumb.id; let i = $index) {
-				<span class="breadcrumb-separator">/</span>
-				<button class="breadcrumb-item" (click)="navigateToBreadcrumb(i)">
-					{{ crumb.name }}
-				</button>
-			}
-		</div>
+		<breadcrumb
+			[items]="breadcrumbs"
+			(rootClick)="navigateToRoot()"
+			(itemClick)="navigateToBreadcrumb($event)"
+		></breadcrumb>
 
 		<div class="toolbar-actions">
 			@if (selectionMode) {

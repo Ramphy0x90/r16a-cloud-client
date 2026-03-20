@@ -1,0 +1,35 @@
+.breadcrumbs {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+	background: none;
+	border: none;
+	color: var(--colour-foreground);
+	cursor: pointer;
+	padding: var(--space-1);
+	border-radius: var(--radius);
+	font-size: 0.9rem;
+	opacity: 0.7;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.breadcrumb-item:last-child {
+	opacity: 1;
+	font-weight: 600;
+}
+
+.breadcrumb-item:hover {
+	opacity: 1;
+	background-color: var(--colour-card);
+}
+
+.breadcrumb-separator {
+	opacity: 0.4;
+	font-size: 0.85rem;
+}
