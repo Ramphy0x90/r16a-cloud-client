@@ -19,6 +19,7 @@ import { ImagePreviewModal, ImagePreviewModalState } from '../files/image-previe
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { FileService } from '../../services/file.service';
 import { HttpResponse } from '@angular/common/http';
+import { isImageFile } from '../../utils/file-utils';
 
 @Component({
 	selector: 'shared-page',
@@ -90,7 +91,7 @@ export class SharedPage implements OnDestroy {
 
 	onFileClick(file: File): void {
 		this.selectedFile = file;
-		if (this.isImageFile(file)) {
+		if (isImageFile(file)) {
 			this.openImagePreview(file);
 			return;
 		}
@@ -98,7 +99,7 @@ export class SharedPage implements OnDestroy {
 	}
 
 	onImageVisible(file: File): void {
-		if (!this.isImageFile(file)) return;
+		if (!isImageFile(file)) return;
 		if (this.thumbnailUrls.has(file.id) || this.thumbnailInFlight.has(file.id)) return;
 
 		this.thumbnailInFlight.add(file.id);
@@ -130,11 +131,6 @@ export class SharedPage implements OnDestroy {
 
 	private requestFilesRefresh(): void {
 		this.triggerFilesFetch$.next();
-	}
-
-	private isImageFile(file: File): boolean {
-		if (file.isDirectory) return false;
-		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
 	}
 
 	private openImagePreview(file: File): void {

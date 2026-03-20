@@ -28,6 +28,7 @@ import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
+import { isImageFile } from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
@@ -239,7 +240,7 @@ export class FilesPage implements OnDestroy {
 			return;
 		}
 
-		if (this.isImageFile(file)) {
+		if (isImageFile(file)) {
 			this.openImagePreview(file);
 		}
 	}
@@ -547,11 +548,6 @@ export class FilesPage implements OnDestroy {
 		URL.revokeObjectURL(url);
 	}
 
-	private isImageFile(file: File): boolean {
-		if (file.isDirectory) return false;
-		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
-	}
-
 	private openImagePreview(file: File): void {
 		this.imagePreviewOpen$.next(file);
 	}
@@ -599,7 +595,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	private queueImagePreview(file: File): void {
-		if (!this.isImageFile(file)) return;
+		if (!isImageFile(file)) return;
 		if (this.getThumbnailPreviewUrl(file.id)) return;
 		if (this.thumbnailPreviewInFlight.has(file.id)) return;
 		this.imagePreviewLoadQueue$.next(file);
@@ -607,7 +603,7 @@ export class FilesPage implements OnDestroy {
 
 	private reconcileThumbnailCacheWithFiles(files: File[]): void {
 		this.cleanupExpiredThumbnailPreviews();
-		const imageFiles = files.filter((file) => this.isImageFile(file));
+		const imageFiles = files.filter((file) => isImageFile(file));
 		const next = new Map<string, string>();
 		for (const file of imageFiles) {
 			const cachedUrl = this.getThumbnailPreviewUrl(file.id);

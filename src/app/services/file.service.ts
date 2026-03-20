@@ -11,6 +11,7 @@ import {
 	SortField,
 	UpdateFileRequest,
 } from '../types/file';
+import { isImageFile as isImageFileUtil } from '../utils/file-utils';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -18,8 +19,7 @@ export class FileService {
 	private readonly apiUrl = `${environment.apiUrl}/fs`;
 
 	isImageFile(file: File): boolean {
-		if (file.isDirectory) return false;
-		return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+		return isImageFileUtil(file);
 	}
 
 	getFiles(
