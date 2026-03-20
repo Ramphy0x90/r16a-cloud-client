@@ -18,8 +18,11 @@ import { ListView } from '../files/list-view/list-view';
 import { ImagePreviewModal, ImagePreviewModalState } from '../files/image-preview-modal/image-preview-modal';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { FileService } from '../../services/file.service';
-import { HttpResponse } from '@angular/common/http';
-import { isImageFile } from '../../utils/file-utils';
+import {
+	extractDownloadFilename,
+	isImageFile,
+	triggerBrowserDownload,
+} from '../../utils/file-utils';
 
 @Component({
 	selector: 'shared-page',
@@ -193,34 +196,10 @@ export class SharedPage implements OnDestroy {
 				next: (response) => {
 					if (!response.body) return;
 					const fallbackName = file.isDirectory ? `${file.name}.zip` : file.name;
-					const filename = this.extractDownloadFilename(response) ?? fallbackName;
-					this.triggerBrowserDownload(response.body, filename);
+					const filename = extractDownloadFilename(response) ?? fallbackName;
+					triggerBrowserDownload(response.body, filename);
 				},
 				error: (err) => console.error('Failed to download shared file:', err),
 			});
-	}
-
-	private extractDownloadFilename(response: HttpResponse<Blob>): string | null {
-		const contentDisposition = response.headers.get('content-disposition');
-		if (!contentDisposition) return null;
-
-		const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-		if (encodedMatch?.[1]) {
-			return decodeURIComponent(encodedMatch[1]);
-		}
-
-		const regularMatch = contentDisposition.match(/filename="([^"]+)"/i);
-		return regularMatch?.[1] ?? null;
-	}
-
-	private triggerBrowserDownload(blob: Blob, filename: string): void {
-		const url = URL.createObjectURL(blob);
-		const anchor = document.createElement('a');
-		anchor.href = url;
-		anchor.download = filename;
-		document.body.appendChild(anchor);
-		anchor.click();
-		document.body.removeChild(anchor);
-		URL.revokeObjectURL(url);
 	}
 }

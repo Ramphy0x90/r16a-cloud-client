@@ -22,13 +22,12 @@ import {
 	takeUntil,
 	timeout,
 } from 'rxjs';
-import { HttpResponse } from '@angular/common/http';
 import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
-import { isImageFile } from '../../utils/file-utils';
+import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
@@ -487,8 +486,8 @@ export class FilesPage implements OnDestroy {
 							? singleSelected.name
 							: `download_${Date.now()}.zip`;
 
-					const filename = this.extractDownloadFilename(response) ?? fallbackName;
-					this.triggerBrowserDownload(response.body, filename);
+					const filename = extractDownloadFilename(response) ?? fallbackName;
+					triggerBrowserDownload(response.body, filename);
 					this.cancelSelection();
 				},
 				error: (err) => console.error('Failed to download selected files:', err),
@@ -521,31 +520,6 @@ export class FilesPage implements OnDestroy {
 			url: null,
 			loading: false,
 		});
-	}
-
-	private extractDownloadFilename(response: HttpResponse<Blob>): string | null {
-		const contentDisposition = response.headers.get('content-disposition');
-		if (!contentDisposition) return null;
-
-		const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-		if (encodedMatch?.[1]) {
-			return decodeURIComponent(encodedMatch[1]);
-		}
-
-		const regularMatch = contentDisposition.match(/filename="([^"]+)"/i);
-		return regularMatch?.[1] ?? null;
-	}
-
-	private triggerBrowserDownload(blob: Blob, filename: string): void {
-		const url = URL.createObjectURL(blob);
-		const anchor = document.createElement('a');
-
-		anchor.href = url;
-		anchor.download = filename;
-		document.body.appendChild(anchor);
-		anchor.click();
-		document.body.removeChild(anchor);
-		URL.revokeObjectURL(url);
 	}
 
 	private openImagePreview(file: File): void {
