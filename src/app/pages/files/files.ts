@@ -31,6 +31,7 @@ import { UserResponse } from '../../types/user';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FileOptions } from '../../components/file-options/file-options';
+import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
 
 interface CachedImagePreview {
 	url: string;
@@ -38,17 +39,9 @@ interface CachedImagePreview {
 	lastAccessedAt: number;
 }
 
-interface ImagePreviewState {
-	show: boolean;
-	fileName: string | null;
-	fileId: string | null;
-	url: string | null;
-	loading: boolean;
-}
-
 @Component({
 	selector: 'files-page',
-	imports: [CommonModule, FormsModule, ListView, GridView, FileOptions],
+	imports: [CommonModule, FormsModule, ListView, GridView, FileOptions, ImagePreviewModal],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
 })
@@ -80,7 +73,7 @@ export class FilesPage implements OnDestroy {
 	private readonly thumbnailPreviewTtlMs = 5 * 60_000;
 	private readonly maxThumbnailCacheSize = 400;
 
-	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewState>({
+	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
 		show: false,
 		fileName: null,
 		fileId: null,
@@ -167,7 +160,7 @@ export class FilesPage implements OnDestroy {
 			.pipe(
 				switchMap((file) => {
 					const cachedUrl = this.fullImagePreviewCache.get(file.id) ?? null;
-					const initialState: ImagePreviewState = {
+					const initialState: ImagePreviewModalState = {
 						show: true,
 						fileName: file.name,
 						fileId: file.id,

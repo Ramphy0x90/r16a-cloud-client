@@ -1,0 +1,24 @@
+@if (state?.show) {
+	<div class="modal-overlay image-modal-overlay" (click)="onClose()">
+		<div class="image-modal" (click)="$event.stopPropagation()">
+			<div class="image-modal-header">
+				<h3 class="modal-title">{{ state?.fileName }}</h3>
+				<button class="image-modal-close" (click)="onClose()" aria-label="Close image">
+					<i class="bi bi-x-lg"></i>
+				</button>
+			</div>
+
+			<div class="image-modal-content">
+				@if (state?.url) {
+					<img class="image-modal-preview" [src]="state?.url" [alt]="state?.fileName ?? 'Image'" />
+				} @else if (state?.loading) {
+					<div class="loading-container image-modal-loading">
+						<div class="loading-spinner"></div>
+					</div>
+				} @else {
+					<p class="modal-text">Could not load image preview.</p>
+				}
+			</div>
+		</div>
+	</div>
+}

@@ -1,16 +1,28 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
-import { catchError, map, Observable, of, shareReplay, startWith, Subject, switchMap, take } from 'rxjs';
+import {
+	BehaviorSubject,
+	catchError,
+	map,
+	Observable,
+	of,
+	shareReplay,
+	startWith,
+	Subject,
+	switchMap,
+	take,
+} from 'rxjs';
 import { FileOptions } from '../../components/file-options/file-options';
 import { GridView } from '../files/grid-view/grid-view';
 import { ListView } from '../files/list-view/list-view';
+import { ImagePreviewModal, ImagePreviewModalState } from '../files/image-preview-modal/image-preview-modal';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { FileService } from '../../services/file.service';
 import { HttpResponse } from '@angular/common/http';
 
 @Component({
 	selector: 'shared-page',
-	imports: [CommonModule, FileOptions, GridView, ListView],
+	imports: [CommonModule, FileOptions, GridView, ListView, ImagePreviewModal],
 	templateUrl: './shared.html',
 	styleUrl: './shared.css',
 })
@@ -18,15 +30,19 @@ export class SharedPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
 	private readonly triggerFilesFetch$ = new Subject<void>();
 	private readonly imagePreviewUrlsSubject = new Subject<Map<string, string>>();
+	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
+		show: false,
+		fileName: null,
+		fileId: null,
+		url: null,
+		loading: false,
+	});
 
 	viewMode: ViewMode = 'grid';
 	sortField: SortField = 'name';
 	sortDirection: SortDirection = 'asc';
 	selectedFile: File | null = null;
-	showImagePreviewModal = false;
-	imagePreviewName: string | null = null;
-	imagePreviewUrl: string | null = null;
-	imagePreviewLoading = false;
+	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
 
 	readonly files$: Observable<File[]> = this.triggerFilesFetch$.pipe(
 		startWith(void 0),
@@ -103,10 +119,13 @@ export class SharedPage implements OnDestroy {
 	}
 
 	closeImagePreview(): void {
-		this.showImagePreviewModal = false;
-		this.imagePreviewName = null;
-		this.imagePreviewUrl = null;
-		this.imagePreviewLoading = false;
+		this.imagePreviewStateSubject.next({
+			show: false,
+			fileName: null,
+			fileId: null,
+			url: null,
+			loading: false,
+		});
 	}
 
 	private requestFilesRefresh(): void {
@@ -119,17 +138,25 @@ export class SharedPage implements OnDestroy {
 	}
 
 	private openImagePreview(file: File): void {
-		this.showImagePreviewModal = true;
-		this.imagePreviewName = file.name;
+		const initialState: ImagePreviewModalState = {
+			show: true,
+			fileName: file.name,
+			fileId: file.id,
+			url: null,
+			loading: true,
+		};
+
 		const cached = this.fullPreviewUrls.get(file.id) ?? null;
 		if (cached) {
-			this.imagePreviewUrl = cached;
-			this.imagePreviewLoading = false;
+			this.imagePreviewStateSubject.next({
+				...initialState,
+				url: cached,
+				loading: false,
+			});
 			return;
 		}
 
-		this.imagePreviewUrl = null;
-		this.imagePreviewLoading = true;
+		this.imagePreviewStateSubject.next(initialState);
 		this.fileService
 			.downloadFile(file.id)
 			.pipe(
@@ -140,14 +167,25 @@ export class SharedPage implements OnDestroy {
 				}),
 			)
 			.subscribe((response) => {
+				const current = this.imagePreviewStateSubject.value;
+				if (!current.show || current.fileId !== file.id) return;
+
 				if (!response?.body) {
-					this.imagePreviewLoading = false;
+					this.imagePreviewStateSubject.next({
+						...current,
+						url: null,
+						loading: false,
+					});
 					return;
 				}
+
 				const url = URL.createObjectURL(response.body);
 				this.fullPreviewUrls.set(file.id, url);
-				this.imagePreviewUrl = url;
-				this.imagePreviewLoading = false;
+				this.imagePreviewStateSubject.next({
+					...current,
+					url,
+					loading: false,
+				});
 			});
 	}
 

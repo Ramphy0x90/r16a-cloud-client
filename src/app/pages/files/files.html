@@ -192,40 +192,10 @@
 }
 
 <!-- Image Preview Modal -->
-@if (imagePreviewState$ | async; as previewState) {
-	@if (previewState.show) {
-		<div class="modal-overlay image-modal-overlay" (click)="closeImagePreviewModal()">
-			<div class="image-modal" (click)="$event.stopPropagation()">
-				<div class="image-modal-header">
-					<h3 class="modal-title">{{ previewState.fileName }}</h3>
-					<button
-						class="icon-btn image-modal-close"
-						(click)="closeImagePreviewModal()"
-						aria-label="Close image"
-					>
-						<i class="bi bi-x-lg"></i>
-					</button>
-				</div>
-
-				<div class="image-modal-content">
-					@if (previewState.url) {
-						<img
-							class="image-modal-preview"
-							[src]="previewState.url"
-							[alt]="previewState.fileName ?? 'Image'"
-						/>
-					} @else if (previewState.loading) {
-						<div class="loading-container image-modal-loading">
-							<div class="loading-spinner"></div>
-						</div>
-					} @else {
-						<p class="modal-text">Could not load image preview.</p>
-					}
-				</div>
-			</div>
-		</div>
-	}
-}
+<image-preview-modal
+	[state]="imagePreviewState$ | async"
+	(close)="closeImagePreviewModal()"
+></image-preview-modal>
 
 <!-- Rename Modal -->
 @if (showRenameModal) {

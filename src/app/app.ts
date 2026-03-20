@@ -19,7 +19,7 @@ import { changeTheme } from './store/app/app.actions';
 	styleUrl: './app.css',
 })
 export class App implements OnInit, OnDestroy {
-	protected readonly title = signal('r16a-cloud_client');
+	protected readonly title = signal('R16a Cloud');
 
 	private readonly oidc = inject(OidcSecurityService);
 	private readonly store: Store = inject(Store);
