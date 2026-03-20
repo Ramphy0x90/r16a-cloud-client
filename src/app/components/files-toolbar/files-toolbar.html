@@ -1,0 +1,63 @@
+<div class="toolbar">
+	<breadcrumb
+		[items]="breadcrumbs()"
+		(rootClick)="onRootClick()"
+		(itemClick)="onBreadcrumbClick($event)"
+	></breadcrumb>
+
+	<div class="toolbar-actions">
+		@if (selectionMode()) {
+			<span class="selection-count">{{ selectedCount() }} selected</span>
+
+			@if (selectedCount() === 1) {
+				<button class="action-btn" (click)="onShareSelected()" title="Share">
+					<i class="bi bi-share"></i>
+					<span class="btn-label">Share</span>
+				</button>
+
+				<button class="action-btn" (click)="onRenameSelected()" title="Rename">
+					<i class="bi bi-pencil"></i>
+					<span class="btn-label">Rename</span>
+				</button>
+			}
+
+			@if (selectedCount() > 0) {
+				<button class="action-btn" (click)="onDownloadSelected()" title="Download">
+					<i class="bi bi-download"></i>
+					<span class="btn-label">Download</span>
+				</button>
+
+				<button class="action-btn danger-btn" (click)="onBulkDeleteSelected()" title="Delete">
+					<i class="bi bi-trash"></i>
+					<span class="btn-label">Delete</span>
+				</button>
+			}
+
+			<button class="action-btn" (click)="onCancelSelection()" title="Cancel selection">
+				<i class="bi bi-x-lg"></i>
+				<span class="btn-label">Cancel</span>
+			</button>
+		} @else {
+			<file-options
+				[viewMode]="viewMode()"
+				[sortField]="sortField()"
+				[sortDirection]="sortDirection()"
+				[selectionMode]="selectionMode()"
+				(viewModeChange)="onViewModeChange($event)"
+				(sortFieldChange)="onSortFieldChange($event)"
+				(sortDirectionChange)="onSortDirectionChange($event)"
+				(selectionModeChange)="onSelectionModeChange($event)"
+			></file-options>
+
+			<button class="action-btn primary-btn" (click)="onCreateFolder()" title="New folder">
+				<i class="bi bi-folder-plus"></i>
+				<span class="btn-label">New folder</span>
+			</button>
+
+			<button class="action-btn primary-btn" (click)="onUpload()" title="Upload files">
+				<i class="bi bi-cloud-arrow-up"></i>
+				<span class="btn-label">Upload</span>
+			</button>
+		}
+	</div>
+</div>

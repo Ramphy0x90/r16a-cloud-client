@@ -7,6 +7,7 @@ import { routes } from './app.routes';
 import { provideState, provideStore } from '@ngrx/store';
 import { features } from './store/features';
 import { appReducer } from './store/app/app.reducer';
+import { fileReducer } from './store/file/file.reducer';
 import { environment } from '../environments/environment';
 import { provideServiceWorker } from '@angular/service-worker';
 
@@ -32,12 +33,15 @@ export const appConfig: ApplicationConfig = {
 			},
 		}),
 		provideStore(),
-		provideState({ name: features.APP, reducer: appReducer }), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          }), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          }),
+		provideState({ name: features.APP, reducer: appReducer }),
+		provideState({ name: features.FILE, reducer: fileReducer }),
+		provideServiceWorker('ngsw-worker.js', {
+			enabled: !isDevMode(),
+			registrationStrategy: 'registerWhenStable:30000',
+		}),
+		provideServiceWorker('ngsw-worker.js', {
+			enabled: !isDevMode(),
+			registrationStrategy: 'registerWhenStable:30000',
+		}),
 	],
 };

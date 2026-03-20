@@ -1,0 +1,74 @@
+.toolbar {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--space-2);
+	background-color: var(--colour-card);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius);
+	box-shadow: 0px 10px 8px -8px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.action-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius);
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+	border: none;
+	cursor: pointer;
+	font-size: 0.875rem;
+	white-space: nowrap;
+}
+
+.action-btn i {
+	font-size: 1.3rem;
+}
+
+.action-btn:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.action-btn.primary-btn {
+	background-color: var(--colour-primary);
+	color: #fff;
+}
+
+.action-btn.primary-btn:hover {
+	opacity: 0.85;
+}
+
+.btn-label {
+	display: none;
+}
+
+.selection-count {
+	font-size: 0.85rem;
+	font-weight: 500;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.action-btn.danger-btn {
+	background-color: var(--colour-alert);
+	color: #fff;
+}
+
+.action-btn.danger-btn:hover {
+	opacity: 0.85;
+}
+
+@media (min-width: 768px) {
+	.btn-label {
+		display: inline;
+	}
+}

@@ -1,68 +1,6 @@
 <div class="page files-page">
 	<!-- Toolbar -->
-	<div class="toolbar">
-		<breadcrumb
-			[items]="breadcrumbs"
-			(rootClick)="navigateToRoot()"
-			(itemClick)="navigateToBreadcrumb($event)"
-		></breadcrumb>
-
-		<div class="toolbar-actions">
-			@if (selectionMode) {
-				<span class="selection-count">{{ selectedFileIds.size }} selected</span>
-
-				@if (selectedFileIds.size === 1) {
-					<button class="action-btn" (click)="openShareSelected()" title="Share">
-						<i class="bi bi-share"></i>
-						<span class="btn-label">Share</span>
-					</button>
-
-					<button class="action-btn" (click)="openRenameSelected()" title="Rename">
-						<i class="bi bi-pencil"></i>
-						<span class="btn-label">Rename</span>
-					</button>
-				}
-
-				@if (selectedFileIds.size > 0) {
-					<button class="action-btn" (click)="downloadSelected()" title="Download">
-						<i class="bi bi-download"></i>
-						<span class="btn-label">Download</span>
-					</button>
-
-					<button class="action-btn danger-btn" (click)="openBulkDeleteConfirm()" title="Delete">
-						<i class="bi bi-trash"></i>
-						<span class="btn-label">Delete</span>
-					</button>
-				}
-
-				<button class="action-btn" (click)="cancelSelection()" title="Cancel selection">
-					<i class="bi bi-x-lg"></i>
-					<span class="btn-label">Cancel</span>
-				</button>
-			} @else {
-				<file-options
-					[viewMode]="viewMode"
-					[sortField]="sortField"
-					[sortDirection]="sortDirection"
-					[selectionMode]="selectionMode"
-					(viewModeChange)="onViewModeChange($event)"
-					(sortFieldChange)="onSortFieldChange($event)"
-					(sortDirectionChange)="onSortDirectionChange($event)"
-					(selectionModeChange)="onSelectionModeChange($event)"
-				></file-options>
-
-				<button class="action-btn primary-btn" (click)="openCreateFolderModal()" title="New folder">
-					<i class="bi bi-folder-plus"></i>
-					<span class="btn-label">New folder</span>
-				</button>
-
-				<button class="action-btn primary-btn" (click)="triggerUpload()" title="Upload files">
-					<i class="bi bi-cloud-arrow-up"></i>
-					<span class="btn-label">Upload</span>
-				</button>
-			}
-		</div>
-	</div>
+	<files-toolbar></files-toolbar>
 
 	<input #fileInput type="file" (change)="onFileSelected($event)" hidden multiple />
 

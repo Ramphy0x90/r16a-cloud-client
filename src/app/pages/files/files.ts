@@ -1,6 +1,7 @@
 import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActionsSubject, Store } from '@ngrx/store';
 import {
 	BehaviorSubject,
 	catchError,
@@ -30,9 +31,24 @@ import { UserResponse } from '../../types/user';
 import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
-import { FileOptions } from '../../components/file-options/file-options';
-import { Breadcrumb } from '../../components/breadcrumb/breadcrumb';
+import { FilesToolbar } from '../../components/files-toolbar/files-toolbar';
 import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
+import {
+	setFileToolbarState,
+	toolbarBreadcrumbClicked,
+	toolbarBulkDeleteClicked,
+	toolbarCancelSelectionClicked,
+	toolbarCreateFolderClicked,
+	toolbarDownloadClicked,
+	toolbarRenameClicked,
+	toolbarRootClicked,
+	toolbarSelectionModeChanged,
+	toolbarShareClicked,
+	toolbarSortDirectionChanged,
+	toolbarSortFieldChanged,
+	toolbarUploadClicked,
+	toolbarViewModeChanged,
+} from '../../store/file/file.actions';
 
 interface CachedImagePreview {
 	url: string;
@@ -42,7 +58,7 @@ interface CachedImagePreview {
 
 @Component({
 	selector: 'files-page',
-	imports: [CommonModule, FormsModule, ListView, GridView, FileOptions, Breadcrumb, ImagePreviewModal],
+	imports: [CommonModule, FormsModule, ListView, GridView, FilesToolbar, ImagePreviewModal],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
 })
@@ -52,6 +68,8 @@ export class FilesPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
 	private readonly filesCacheService = inject(FilesCacheService);
 	private readonly userService = inject(UserService);
+	private readonly store = inject(Store);
+	private readonly actions$ = inject(ActionsSubject);
 	private readonly destroy$ = new Subject<void>();
 
 	private readonly ownerId$: Observable<string> = this.userService.currentUser$.pipe(
@@ -107,16 +125,16 @@ export class FilesPage implements OnDestroy {
 		takeUntil(this.destroy$),
 	);
 
-	viewMode: ViewMode = 'grid';
-	sortField: SortField = 'name';
-	sortDirection: SortDirection = 'asc';
+	private _viewMode: ViewMode = 'grid';
+	private _sortField: SortField = 'name';
+	private _sortDirection: SortDirection = 'asc';
 
 	currentFolder: File | null = null;
-	breadcrumbs: File[] = [];
+	private _breadcrumbs: File[] = [];
 	loading = false;
 
-	selectionMode = false;
-	selectedFileIds = new Set<string>();
+	private _selectionMode = false;
+	private _selectedFileIds = new Set<string>();
 
 	showCreateFolderModal = false;
 	showRenameModal = false;
@@ -140,7 +158,69 @@ export class FilesPage implements OnDestroy {
 	newFolderName = '';
 	renameName = '';
 
+	private toolbarSyncScheduled = false;
+
+	get breadcrumbs(): File[] {
+		return this._breadcrumbs;
+	}
+
+	set breadcrumbs(value: File[]) {
+		this._breadcrumbs = value;
+		this.scheduleToolbarSync();
+	}
+
+	get selectionMode(): boolean {
+		return this._selectionMode;
+	}
+
+	set selectionMode(value: boolean) {
+		this._selectionMode = value;
+		this.scheduleToolbarSync();
+	}
+
+	get selectedFileIds(): Set<string> {
+		return this._selectedFileIds;
+	}
+
+	set selectedFileIds(value: Set<string>) {
+		this._selectedFileIds = value;
+		this.scheduleToolbarSync();
+	}
+
+	get viewMode(): ViewMode {
+		return this._viewMode;
+	}
+
+	set viewMode(value: ViewMode) {
+		this._viewMode = value;
+		this.scheduleToolbarSync();
+	}
+
+	get sortField(): SortField {
+		return this._sortField;
+	}
+
+	set sortField(value: SortField) {
+		this._sortField = value;
+		this.scheduleToolbarSync();
+	}
+
+	get sortDirection(): SortDirection {
+		return this._sortDirection;
+	}
+
+	set sortDirection(value: SortDirection) {
+		this._sortDirection = value;
+		this.scheduleToolbarSync();
+	}
+
 	constructor() {
+		this.syncToolbarState();
+
+		this.actions$
+			.pipe(takeUntil(this.destroy$))
+			.subscribe((action) => this.handleToolbarAction(action));
+
 		this.files$
 			.pipe(takeUntil(this.destroy$))
 			.subscribe((files) => this.reconcileThumbnailCacheWithFiles(files));
@@ -704,5 +784,73 @@ export class FilesPage implements OnDestroy {
 			URL.revokeObjectURL(previewUrl);
 		}
 		this.fullImagePreviewCache.clear();
+	}
+
+	private handleToolbarAction(action: { type: string }): void {
+		switch (action.type) {
+			case toolbarRootClicked.type:
+				this.navigateToRoot();
+				break;
+			case toolbarBreadcrumbClicked.type:
+				this.navigateToBreadcrumb((action as ReturnType<typeof toolbarBreadcrumbClicked>).index);
+				break;
+			case toolbarViewModeChanged.type:
+				this.onViewModeChange((action as ReturnType<typeof toolbarViewModeChanged>).mode);
+				break;
+			case toolbarSortFieldChanged.type:
+				this.onSortFieldChange((action as ReturnType<typeof toolbarSortFieldChanged>).field);
+				break;
+			case toolbarSortDirectionChanged.type:
+				this.onSortDirectionChange(
+					(action as ReturnType<typeof toolbarSortDirectionChanged>).direction,
+				);
+				break;
+			case toolbarSelectionModeChanged.type:
+				this.onSelectionModeChange((action as ReturnType<typeof toolbarSelectionModeChanged>).enabled);
+				break;
+			case toolbarShareClicked.type:
+				this.openShareSelected();
+				break;
+			case toolbarRenameClicked.type:
+				this.openRenameSelected();
+				break;
+			case toolbarDownloadClicked.type:
+				this.downloadSelected();
+				break;
+			case toolbarBulkDeleteClicked.type:
+				this.openBulkDeleteConfirm();
+				break;
+			case toolbarCancelSelectionClicked.type:
+				this.cancelSelection();
+				break;
+			case toolbarCreateFolderClicked.type:
+				this.openCreateFolderModal();
+				break;
+			case toolbarUploadClicked.type:
+				this.triggerUpload();
+				break;
+		}
+	}
+
+	private scheduleToolbarSync(): void {
+		if (this.toolbarSyncScheduled) return;
+		this.toolbarSyncScheduled = true;
+		queueMicrotask(() => {
+			this.toolbarSyncScheduled = false;
+			this.syncToolbarState();
+		});
+	}
+
+	private syncToolbarState(): void {
+		this.store.dispatch(
+			setFileToolbarState({
+				breadcrumbs: this.breadcrumbs,
+				selectionMode: this.selectionMode,
+				selectedCount: this.selectedFileIds.size,
+				viewMode: this.viewMode,
+				sortField: this.sortField,
+				sortDirection: this.sortDirection,
+			}),
+		);
 	}
 }
