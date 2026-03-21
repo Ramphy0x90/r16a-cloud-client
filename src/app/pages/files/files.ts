@@ -1,4 +1,11 @@
-import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
+import {
+	ChangeDetectorRef,
+	Component,
+	ElementRef,
+	inject,
+	OnDestroy,
+	ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActionsSubject, Store } from '@ngrx/store';
@@ -7,10 +14,12 @@ import {
 	catchError,
 	combineLatest,
 	concat,
+	EMPTY,
 	filter,
 	finalize,
 	firstValueFrom,
 	forkJoin,
+	from,
 	map,
 	mergeMap,
 	Observable,
@@ -73,6 +82,7 @@ export class FilesPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
 	private readonly filesCacheService = inject(FilesCacheService);
 	private readonly userService = inject(UserService);
+	private readonly cdr = inject(ChangeDetectorRef);
 	private readonly imagePreviewService = inject(ImagePreviewService);
 	private readonly store = inject(Store);
 	private readonly actions$ = inject(ActionsSubject);
@@ -144,6 +154,17 @@ export class FilesPage implements OnDestroy {
 
 	newFolderName = '';
 	renameName = '';
+
+	/** Shown while uploads are in progress (bounded concurrency). */
+	uploadOverlay: {
+		currentIndex: number;
+		fileCount: number;
+		currentName: string;
+		overallLoaded: number;
+		overallTotal: number;
+	} | null = null;
+
+	uploadErrors: string[] = [];
 
 	private toolbarSyncScheduled = false;
 
@@ -311,21 +332,67 @@ export class FilesPage implements OnDestroy {
 
 		if (!input.files?.length || ownerId === null) return;
 
-		const uploads$ = Array.from(input.files).map((file) =>
-			this.fileService.uploadFile(ownerId, this.currentFolder?.id ?? null, file),
-		);
+		const files = Array.from(input.files);
+		const parentId = this.currentFolder?.id ?? null;
+		const overallTotal = files.reduce((sum, f) => sum + f.size, 0);
 
-		forkJoin(uploads$)
-			.pipe(take(1))
-			.subscribe({
-				next: () => this.refreshCurrentFolderAfterMutation(),
-				error: (err) => {
-					console.error('Failed to upload files:', err);
+		this.uploadErrors = [];
+		this.uploadOverlay = {
+			currentIndex: 0,
+			fileCount: files.length,
+			currentName: '',
+			overallLoaded: 0,
+			overallTotal,
+		};
+		this.cdr.markForCheck();
+
+		from(files.map((file, index) => ({ file, index })))
+			.pipe(
+				mergeMap(({ file, index }) => {
+					const prevCompleted = files.slice(0, index).reduce((sum, f) => sum + f.size, 0);
+					this.uploadOverlay = {
+						currentIndex: index + 1,
+						fileCount: files.length,
+						currentName: file.name,
+						overallLoaded: prevCompleted,
+						overallTotal,
+					};
+					this.cdr.markForCheck();
+
+					return this.fileService
+						.uploadFile(ownerId, parentId, file, (loaded, total) => {
+							this.uploadOverlay = {
+								currentIndex: index + 1,
+								fileCount: files.length,
+								currentName: file.name,
+								overallLoaded: prevCompleted + loaded,
+								overallTotal,
+							};
+							this.cdr.markForCheck();
+						})
+						.pipe(
+							catchError((err: unknown) => {
+								const message = err instanceof Error ? err.message : 'Upload failed';
+								this.uploadErrors.push(`${file.name}: ${message}`);
+								this.cdr.markForCheck();
+								return EMPTY;
+							}),
+						);
+				}, 2),
+				finalize(() => {
+					this.uploadOverlay = null;
 					this.refreshCurrentFolderAfterMutation();
-				},
-			});
+					this.cdr.markForCheck();
+				}),
+				takeUntil(this.destroy$),
+			)
+			.subscribe();
 
 		input.value = '';
+	}
+
+	clearUploadErrors(): void {
+		this.uploadErrors = [];
 	}
 
 	openCreateFolderModal(): void {

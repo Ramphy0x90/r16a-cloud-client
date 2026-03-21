@@ -4,6 +4,37 @@
 
 	<input #fileInput type="file" (change)="onFileSelected($event)" hidden multiple />
 
+	@if (uploadOverlay) {
+		<div class="upload-progress-overlay" role="status" aria-live="polite">
+			<div class="upload-progress-card">
+				<p class="upload-progress-title">Uploading</p>
+				<p class="upload-progress-detail">
+					{{ uploadOverlay.currentIndex }} / {{ uploadOverlay.fileCount }} —
+					{{ uploadOverlay.currentName }}
+				</p>
+				<progress
+					class="upload-progress-bar"
+					[value]="uploadOverlay.overallLoaded"
+					[max]="uploadOverlay.overallTotal > 0 ? uploadOverlay.overallTotal : 1"
+				></progress>
+			</div>
+		</div>
+	}
+
+	@if (uploadErrors.length) {
+		<div class="upload-errors-banner" role="alert">
+			<p class="upload-errors-title">Some uploads failed</p>
+			<ul class="upload-errors-list">
+				@for (err of uploadErrors; track err) {
+					<li>{{ err }}</li>
+				}
+			</ul>
+			<button type="button" class="upload-errors-dismiss" (click)="clearUploadErrors()">
+				Dismiss
+			</button>
+		</div>
+	}
+
 	<!-- Loading -->
 	@if (loading) {
 		<div class="loading-container">
