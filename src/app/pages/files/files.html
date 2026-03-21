@@ -51,7 +51,7 @@
 </div>
 
 <!-- Create Folder Modal -->
-@if (showCreateFolderModal) {
+@if (activeModal === 'create-folder') {
 	<div class="modal-overlay" (click)="closeModals()">
 		<div class="modal" (click)="$event.stopPropagation()">
 			<h3 class="modal-title">Create Folder</h3>
@@ -78,13 +78,13 @@
 }
 
 <!-- Share Modal -->
-@if (showShareModal) {
+@if (activeModal === 'share') {
 	<div class="modal-overlay" (click)="closeModals()">
 		<div class="modal" (click)="$event.stopPropagation()">
-			<h3 class="modal-title">Share {{ fileToShare?.isDirectory ? 'folder' : 'file' }}</h3>
+			<h3 class="modal-title">Share {{ modalFile?.isDirectory ? 'folder' : 'file' }}</h3>
 			<p class="modal-text">
 				Select who can access
-				<strong>{{ fileToShare?.name }}</strong
+				<strong>{{ modalFile?.name }}</strong
 				>.
 			</p>
 
@@ -131,7 +131,7 @@
 ></image-preview-modal>
 
 <!-- Rename Modal -->
-@if (showRenameModal) {
+@if (activeModal === 'rename') {
 	<div class="modal-overlay" (click)="closeModals()">
 		<div class="modal" (click)="$event.stopPropagation()">
 			<h3 class="modal-title">Rename</h3>
@@ -158,13 +158,13 @@
 }
 
 <!-- Delete Confirmation Modal (single) -->
-@if (showDeleteConfirm) {
+@if (activeModal === 'delete') {
 	<div class="modal-overlay" (click)="closeModals()">
 		<div class="modal" (click)="$event.stopPropagation()">
-			<h3 class="modal-title">Delete {{ fileToDelete?.isDirectory ? 'folder' : 'file' }}</h3>
+			<h3 class="modal-title">Delete {{ modalFile?.isDirectory ? 'folder' : 'file' }}</h3>
 			<p class="modal-text">
 				Are you sure you want to delete
-				<strong>{{ fileToDelete?.name }}</strong
+				<strong>{{ modalFile?.name }}</strong
 				>?
 			</p>
 			<div class="modal-actions">
@@ -176,7 +176,7 @@
 }
 
 <!-- Bulk Delete Confirmation Modal -->
-@if (showBulkDeleteConfirm) {
+@if (activeModal === 'bulk-delete') {
 	<div class="modal-overlay" (click)="closeModals()">
 		<div class="modal" (click)="$event.stopPropagation()">
 			<h3 class="modal-title">Delete {{ selectedFileIds.size }} items</h3>

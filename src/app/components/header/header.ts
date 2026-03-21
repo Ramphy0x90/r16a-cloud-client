@@ -1,8 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuickSettings } from '../quick-settings/quick-settings';
 import { AuthService } from '../../services/auth.service';
 import { map, Observable } from 'rxjs';
+import { getUserInitials } from '../../utils/user-utils';
 
 @Component({
 	selector: 'app-header',
@@ -11,25 +12,15 @@ import { map, Observable } from 'rxjs';
 	styleUrl: './header.css',
 })
 export class Header {
-	private readonly aauthService = inject(AuthService);
+	private readonly authService = inject(AuthService);
 
-	readonly isAuthenticated$: Observable<boolean> = this.aauthService.isAuthenticated$;
-	readonly userData$: Observable<Record<string, any>> = this.aauthService.userData$;
+	readonly isAuthenticated$: Observable<boolean> = this.authService.isAuthenticated$;
+	readonly userData$: Observable<Record<string, any>> = this.authService.userData$;
 	readonly userInitials$: Observable<string> = this.userData$.pipe(
-		map((user) => {
-			const tokens = user?.['name'].trim().split(/\s+/) || '';
-
-			if (tokens.length === 0) return '';
-			if (tokens.length === 1) return tokens[0][0].toUpperCase();
-
-			const firstInitial = tokens[0][0];
-			const lastInitial = tokens[tokens.length - 1][0];
-
-			return (firstInitial + lastInitial).toUpperCase();
-		}),
+		map((user) => getUserInitials(user?.['name'] ?? '')),
 	);
 
 	logout(): void {
-		this.aauthService.logout();
+		this.authService.logout();
 	}
 }

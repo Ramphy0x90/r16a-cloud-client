@@ -21,11 +21,11 @@ import {
 	switchMap,
 	take,
 	takeUntil,
-	timeout,
 } from 'rxjs';
 import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
+import { ImagePreviewService } from '../../services/image-preview.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
 import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '../../utils/file-utils';
@@ -50,17 +50,20 @@ import {
 	toolbarViewModeChanged,
 } from '../../store/file/file.actions';
 
-interface CachedImagePreview {
-	url: string;
-	expiresAt: number;
-	lastAccessedAt: number;
-}
+type ActiveModal =
+	| 'none'
+	| 'create-folder'
+	| 'rename'
+	| 'delete'
+	| 'bulk-delete'
+	| 'share';
 
 @Component({
 	selector: 'files-page',
 	imports: [CommonModule, FormsModule, ListView, GridView, FilesToolbar, ImagePreviewModal],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
+	providers: [ImagePreviewService],
 })
 export class FilesPage implements OnDestroy {
 	@ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -68,6 +71,7 @@ export class FilesPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
 	private readonly filesCacheService = inject(FilesCacheService);
 	private readonly userService = inject(UserService);
+	private readonly imagePreviewService = inject(ImagePreviewService);
 	private readonly store = inject(Store);
 	private readonly actions$ = inject(ActionsSubject);
 	private readonly destroy$ = new Subject<void>();
@@ -76,21 +80,11 @@ export class FilesPage implements OnDestroy {
 		map((owner) => owner.id),
 	);
 
-	private readonly triggerFilesFetch$: Subject<void> = new Subject();
+	private readonly triggerFilesFetch$ = new Subject<void>();
 	private readonly imagePreviewLoadQueue$ = new Subject<File>();
 	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
 	private readonly imagePreviewOpen$ = new Subject<File>();
 	private readonly imagePreviewClose$ = new Subject<void>();
-
-	private readonly thumbnailPreviewCache = new Map<string, CachedImagePreview>();
-	private readonly thumbnailPreviewInFlight = new Map<
-		string,
-		Observable<[string, string] | null>
-	>();
-	private readonly fullImagePreviewCache = new Map<string, string>();
-
-	private readonly thumbnailPreviewTtlMs = 5 * 60_000;
-	private readonly maxThumbnailCacheSize = 400;
 
 	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
 		show: false,
@@ -107,15 +101,14 @@ export class FilesPage implements OnDestroy {
 		this.ownerId$,
 	]).pipe(
 		filter(([_, ownerId]) => ownerId != null),
-		switchMap(([_, ownerId]) => {
-			const parentId = this.currentFolder?.id ?? null;
-			return this.filesCacheService.getFilesCached(
+		switchMap(([_, ownerId]) =>
+			this.filesCacheService.getFilesCached(
 				ownerId,
-				parentId,
+				this.currentFolder?.id ?? null,
 				this.sortField,
 				this.sortDirection,
-			);
-		}),
+			),
+		),
 		shareReplay({ bufferSize: 1, refCount: true }),
 		takeUntil(this.destroy$),
 	);
@@ -125,27 +118,19 @@ export class FilesPage implements OnDestroy {
 		takeUntil(this.destroy$),
 	);
 
-	private _viewMode: ViewMode = 'grid';
-	private _sortField: SortField = 'name';
-	private _sortDirection: SortDirection = 'asc';
-
+	viewMode: ViewMode = 'grid';
+	sortField: SortField = 'name';
+	sortDirection: SortDirection = 'asc';
 	currentFolder: File | null = null;
-	private _breadcrumbs: File[] = [];
+	breadcrumbs: File[] = [];
 	loading = false;
+	selectionMode = false;
+	selectedFileIds = new Set<string>();
 
-	private _selectionMode = false;
-	private _selectedFileIds = new Set<string>();
-
-	showCreateFolderModal = false;
-	showRenameModal = false;
-	showDeleteConfirm = false;
-	showBulkDeleteConfirm = false;
-	showShareModal = false;
+	activeModal: ActiveModal = 'none';
+	modalFile: File | null = null;
 
 	selectedFile: File | null = null;
-	fileToDelete: File | null = null;
-	fileToRename: File | null = null;
-	fileToShare: File | null = null;
 	selectedShareUserIds = new Set<string>();
 	shareSaving = false;
 
@@ -160,60 +145,6 @@ export class FilesPage implements OnDestroy {
 
 	private toolbarSyncScheduled = false;
 
-	get breadcrumbs(): File[] {
-		return this._breadcrumbs;
-	}
-
-	set breadcrumbs(value: File[]) {
-		this._breadcrumbs = value;
-		this.scheduleToolbarSync();
-	}
-
-	get selectionMode(): boolean {
-		return this._selectionMode;
-	}
-
-	set selectionMode(value: boolean) {
-		this._selectionMode = value;
-		this.scheduleToolbarSync();
-	}
-
-	get selectedFileIds(): Set<string> {
-		return this._selectedFileIds;
-	}
-
-	set selectedFileIds(value: Set<string>) {
-		this._selectedFileIds = value;
-		this.scheduleToolbarSync();
-	}
-
-	get viewMode(): ViewMode {
-		return this._viewMode;
-	}
-
-	set viewMode(value: ViewMode) {
-		this._viewMode = value;
-		this.scheduleToolbarSync();
-	}
-
-	get sortField(): SortField {
-		return this._sortField;
-	}
-
-	set sortField(value: SortField) {
-		this._sortField = value;
-		this.scheduleToolbarSync();
-	}
-
-	get sortDirection(): SortDirection {
-		return this._sortDirection;
-	}
-
-	set sortDirection(value: SortDirection) {
-		this._sortDirection = value;
-		this.scheduleToolbarSync();
-	}
-
 	constructor() {
 		this.syncToolbarState();
 
@@ -223,11 +154,16 @@ export class FilesPage implements OnDestroy {
 
 		this.files$
 			.pipe(takeUntil(this.destroy$))
-			.subscribe((files) => this.reconcileThumbnailCacheWithFiles(files));
+			.subscribe((files) => {
+				const imageFiles = files.filter(isImageFile);
+				this.imagePreviewUrlsSubject.next(
+					this.imagePreviewService.buildThumbnailMapForFiles(imageFiles),
+				);
+			});
 
 		this.imagePreviewLoadQueue$
 			.pipe(
-				mergeMap((file) => this.ensureThumbnailPreview$(file), 4),
+				mergeMap((file) => this.imagePreviewService.ensureThumbnail$(file), 4),
 				takeUntil(this.destroy$),
 			)
 			.subscribe((preview) => {
@@ -240,22 +176,18 @@ export class FilesPage implements OnDestroy {
 		this.imagePreviewOpen$
 			.pipe(
 				switchMap((file) => {
-					const cachedUrl = this.fullImagePreviewCache.get(file.id) ?? null;
+					const cachedUrl = this.imagePreviewService.ensureFullPreview$(file);
 					const initialState: ImagePreviewModalState = {
 						show: true,
 						fileName: file.name,
 						fileId: file.id,
-						url: cachedUrl,
-						loading: cachedUrl == null,
+						url: null,
+						loading: true,
 					};
-
-					if (cachedUrl) {
-						return of(initialState);
-					}
 
 					return concat(
 						of(initialState),
-						this.ensureFullImagePreview$(file).pipe(
+						cachedUrl.pipe(
 							take(1),
 							map((preview) => ({
 								...initialState,
@@ -272,31 +204,33 @@ export class FilesPage implements OnDestroy {
 
 	ngOnDestroy(): void {
 		this.imagePreviewClose$.next();
-		this.revokeAllImagePreviewUrls();
+		this.imagePreviewService.revokeAll();
 		this.destroy$.next();
 		this.destroy$.complete();
 	}
 
 	onViewModeChange(mode: ViewMode): void {
 		this.viewMode = mode;
+		this.scheduleToolbarSync();
 	}
 
 	onSortFieldChange(field: SortField): void {
 		this.sortField = field;
 		this.sortDirection = 'asc';
 		this.requestFilesRefresh();
+		this.scheduleToolbarSync();
 	}
 
 	onSortDirectionChange(direction: SortDirection): void {
 		this.sortDirection = direction;
 		this.requestFilesRefresh();
+		this.scheduleToolbarSync();
 	}
 
 	onSelectionModeChange(enabled: boolean): void {
 		this.selectionMode = enabled;
-		if (!enabled) {
-			this.selectedFileIds = new Set();
-		}
+		if (!enabled) this.selectedFileIds = new Set();
+		this.scheduleToolbarSync();
 	}
 
 	toggleFileSelection(file: File): void {
@@ -307,11 +241,13 @@ export class FilesPage implements OnDestroy {
 			next.add(file.id);
 		}
 		this.selectedFileIds = next;
+		this.scheduleToolbarSync();
 	}
 
 	cancelSelection(): void {
 		this.selectionMode = false;
 		this.selectedFileIds = new Set();
+		this.scheduleToolbarSync();
 	}
 
 	onFileClick(file: File): void {
@@ -319,7 +255,6 @@ export class FilesPage implements OnDestroy {
 			this.navigateToFolder(file);
 			return;
 		}
-
 		if (isImageFile(file)) {
 			this.openImagePreview(file);
 		}
@@ -331,6 +266,7 @@ export class FilesPage implements OnDestroy {
 		this.selectedFile = null;
 		this.cancelSelection();
 		this.requestFilesRefresh();
+		this.scheduleToolbarSync();
 	}
 
 	navigateToRoot(): void {
@@ -339,6 +275,7 @@ export class FilesPage implements OnDestroy {
 		this.selectedFile = null;
 		this.cancelSelection();
 		this.requestFilesRefresh();
+		this.scheduleToolbarSync();
 	}
 
 	navigateToBreadcrumb(index: number): void {
@@ -347,6 +284,7 @@ export class FilesPage implements OnDestroy {
 		this.selectedFile = null;
 		this.cancelSelection();
 		this.requestFilesRefresh();
+		this.scheduleToolbarSync();
 	}
 
 	triggerUpload(): void {
@@ -378,7 +316,7 @@ export class FilesPage implements OnDestroy {
 
 	openCreateFolderModal(): void {
 		this.newFolderName = '';
-		this.showCreateFolderModal = true;
+		this.activeModal = 'create-folder';
 	}
 
 	async createFolder(): Promise<void> {
@@ -389,7 +327,7 @@ export class FilesPage implements OnDestroy {
 		this.fileService
 			.createFile({
 				name: this.newFolderName.trim(),
-				ownerId: ownerId,
+				ownerId,
 				parentId: this.currentFolder?.id ?? null,
 				isDirectory: true,
 			})
@@ -405,34 +343,32 @@ export class FilesPage implements OnDestroy {
 
 	openRenameModal(file: File, event: Event): void {
 		event.stopPropagation();
-		this.fileToRename = file;
+		this.modalFile = file;
 		this.renameName = file.name;
-		this.showRenameModal = true;
+		this.activeModal = 'rename';
 	}
 
-	openRenameSelected(): void {
-		this.files$.pipe(take(1)).subscribe((files) => {
-			const selectedId = Array.from(this.selectedFileIds)[0];
-			const file = files.find((f) => f.id === selectedId);
-			if (file) {
-				this.fileToRename = file;
-				this.renameName = file.name;
-				this.showRenameModal = true;
-			}
-		});
+	async openRenameSelected(): Promise<void> {
+		const files = await firstValueFrom(this.files$);
+		const selectedId = Array.from(this.selectedFileIds)[0];
+		const file = files.find((f) => f.id === selectedId);
+		if (file) {
+			this.modalFile = file;
+			this.renameName = file.name;
+			this.activeModal = 'rename';
+		}
 	}
 
-	openShareSelected(): void {
-		this.files$.pipe(take(1)).subscribe((files) => {
-			const selectedId = Array.from(this.selectedFileIds)[0];
-			const file = files.find((f) => f.id === selectedId);
-			if (!file) return;
+	async openShareSelected(): Promise<void> {
+		const files = await firstValueFrom(this.files$);
+		const selectedId = Array.from(this.selectedFileIds)[0];
+		const file = files.find((f) => f.id === selectedId);
+		if (!file) return;
 
-			this.fileToShare = file;
-			this.selectedShareUserIds = new Set(file.sharedWithIds);
-			this.showShareModal = true;
-			this.loadShareCandidates();
-		});
+		this.modalFile = file;
+		this.selectedShareUserIds = new Set(file.sharedWithIds);
+		this.activeModal = 'share';
+		this.loadShareCandidates();
 	}
 
 	toggleSharedUser(userId: string): void {
@@ -450,12 +386,13 @@ export class FilesPage implements OnDestroy {
 	}
 
 	saveShareSettings(): void {
-		if (!this.fileToShare || this.shareSaving) return;
+		if (!this.modalFile || this.shareSaving) return;
 
+		const fileId = this.modalFile.id;
 		const sharedWithIds = Array.from(this.selectedShareUserIds);
 		this.shareSaving = true;
 		this.fileService
-			.updateFileSharing(this.fileToShare.id, sharedWithIds)
+			.updateFileSharing(fileId, sharedWithIds)
 			.pipe(take(1))
 			.subscribe({
 				next: () => {
@@ -474,10 +411,10 @@ export class FilesPage implements OnDestroy {
 	}
 
 	renameFile(): void {
-		if (!this.renameName.trim() || !this.fileToRename) return;
+		if (!this.renameName.trim() || !this.modalFile) return;
 
 		this.fileService
-			.updateFile(this.fileToRename.id, { name: this.renameName.trim() })
+			.updateFile(this.modalFile.id, { name: this.renameName.trim() })
 			.pipe(takeUntil(this.destroy$))
 			.subscribe({
 				next: () => {
@@ -491,23 +428,21 @@ export class FilesPage implements OnDestroy {
 
 	openDeleteConfirm(file: File, event: Event): void {
 		event.stopPropagation();
-		this.fileToDelete = file;
-		this.showDeleteConfirm = true;
+		this.modalFile = file;
+		this.activeModal = 'delete';
 	}
 
 	confirmDelete(): void {
-		if (!this.fileToDelete) return;
+		if (!this.modalFile) return;
 
-		const idToDelete = this.fileToDelete.id;
+		const idToDelete = this.modalFile.id;
 
 		this.fileService
 			.deleteFile(idToDelete)
 			.pipe(take(1))
 			.subscribe({
 				next: () => {
-					if (this.selectedFile?.id === idToDelete) {
-						this.selectedFile = null;
-					}
+					if (this.selectedFile?.id === idToDelete) this.selectedFile = null;
 					this.closeModals();
 					this.refreshCurrentFolderAfterMutation();
 				},
@@ -517,7 +452,7 @@ export class FilesPage implements OnDestroy {
 
 	openBulkDeleteConfirm(): void {
 		if (this.selectedFileIds.size === 0) return;
-		this.showBulkDeleteConfirm = true;
+		this.activeModal = 'bulk-delete';
 	}
 
 	confirmBulkDelete(): void {
@@ -528,64 +463,59 @@ export class FilesPage implements OnDestroy {
 			.pipe(take(1))
 			.subscribe({
 				next: () => {
-					this.showBulkDeleteConfirm = false;
+					this.activeModal = 'none';
 					this.cancelSelection();
 					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => {
 					console.error('Failed to delete files:', err);
-					this.showBulkDeleteConfirm = false;
+					this.activeModal = 'none';
 					this.refreshCurrentFolderAfterMutation();
 				},
 			});
 	}
 
 	onImageVisible(file: File): void {
-		this.queueImagePreview(file);
+		if (!isImageFile(file)) return;
+		if (this.imagePreviewService.getThumbnailUrl(file.id)) return;
+		this.imagePreviewLoadQueue$.next(file);
 	}
 
-	downloadSelected(): void {
+	async downloadSelected(): Promise<void> {
 		const selectedIds = Array.from(this.selectedFileIds);
 		if (selectedIds.length === 0) return;
 
-		this.files$.pipe(take(1)).subscribe((files) => {
-			const selectedFiles = files.filter((file) => this.selectedFileIds.has(file.id));
-			if (selectedFiles.length === 0) return;
+		const files = await firstValueFrom(this.files$);
+		const selectedFiles = files.filter((file) => this.selectedFileIds.has(file.id));
+		if (selectedFiles.length === 0) return;
 
-			const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-			const download$ =
-				singleSelected && !singleSelected.isDirectory
-					? this.fileService.downloadFile(singleSelected.id)
-					: this.fileService.downloadFiles(selectedIds);
+		const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
+		const download$ =
+			singleSelected && !singleSelected.isDirectory
+				? this.fileService.downloadFile(singleSelected.id)
+				: this.fileService.downloadFiles(selectedIds);
 
-			download$.pipe(take(1)).subscribe({
-				next: (response) => {
-					if (!response.body) return;
+		download$.pipe(take(1)).subscribe({
+			next: (response) => {
+				if (!response.body) return;
 
-					const fallbackName =
-						singleSelected && !singleSelected.isDirectory
-							? singleSelected.name
-							: `download_${Date.now()}.zip`;
+				const fallbackName =
+					singleSelected && !singleSelected.isDirectory
+						? singleSelected.name
+						: `download_${Date.now()}.zip`;
 
-					const filename = extractDownloadFilename(response) ?? fallbackName;
-					triggerBrowserDownload(response.body, filename);
-					this.cancelSelection();
-				},
-				error: (err) => console.error('Failed to download selected files:', err),
-			});
+				const filename = extractDownloadFilename(response) ?? fallbackName;
+				triggerBrowserDownload(response.body, filename);
+				this.cancelSelection();
+			},
+			error: (err) => console.error('Failed to download selected files:', err),
 		});
 	}
 
 	closeModals(): void {
-		this.showCreateFolderModal = false;
-		this.showRenameModal = false;
-		this.showDeleteConfirm = false;
-		this.showBulkDeleteConfirm = false;
-		this.showShareModal = false;
+		this.activeModal = 'none';
+		this.modalFile = null;
 		this.closeImagePreviewModal();
-		this.fileToDelete = null;
-		this.fileToRename = null;
-		this.fileToShare = null;
 		this.shareCandidatesSubject.next([]);
 		this.selectedShareUserIds = new Set();
 		this.shareUsersLoadingSubject.next(false);
@@ -611,19 +541,14 @@ export class FilesPage implements OnDestroy {
 		this.triggerFilesFetch$.next();
 	}
 
-	private refreshCurrentFolderAfterMutation(): void {
-		this.invalidateCurrentFolderFilesCache();
+	private async refreshCurrentFolderAfterMutation(): Promise<void> {
+		const ownerId = await firstValueFrom(this.ownerId$);
+		this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
 		this.requestFilesRefresh();
 	}
 
-	private invalidateCurrentFolderFilesCache(): void {
-		this.ownerId$.pipe(take(1)).subscribe((ownerId) => {
-			this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
-		});
-	}
-
 	private loadShareCandidates(): void {
-		const fileToShare = this.fileToShare;
+		const fileToShare = this.modalFile;
 		if (!fileToShare) return;
 		this.shareUsersLoadingSubject.next(true);
 
@@ -641,149 +566,10 @@ export class FilesPage implements OnDestroy {
 					console.error('Failed to load users for sharing:', error);
 					return of([]);
 				}),
-				finalize(() => {
-					this.shareUsersLoadingSubject.next(false);
-				}),
+				finalize(() => this.shareUsersLoadingSubject.next(false)),
 				take(1),
 			)
 			.subscribe((users) => this.shareCandidatesSubject.next(users));
-	}
-
-	private queueImagePreview(file: File): void {
-		if (!isImageFile(file)) return;
-		if (this.getThumbnailPreviewUrl(file.id)) return;
-		if (this.thumbnailPreviewInFlight.has(file.id)) return;
-		this.imagePreviewLoadQueue$.next(file);
-	}
-
-	private reconcileThumbnailCacheWithFiles(files: File[]): void {
-		this.cleanupExpiredThumbnailPreviews();
-		const imageFiles = files.filter((file) => isImageFile(file));
-		const next = new Map<string, string>();
-		for (const file of imageFiles) {
-			const cachedUrl = this.getThumbnailPreviewUrl(file.id);
-			if (cachedUrl) {
-				next.set(file.id, cachedUrl);
-			}
-		}
-		this.imagePreviewUrlsSubject.next(next);
-	}
-
-	private getThumbnailPreviewUrl(fileId: string): string | null {
-		const cached = this.thumbnailPreviewCache.get(fileId);
-		if (!cached) return null;
-		if (cached.expiresAt <= Date.now()) {
-			this.removeThumbnailPreview(fileId);
-			return null;
-		}
-		cached.lastAccessedAt = Date.now();
-		return cached.url;
-	}
-
-	private ensureThumbnailPreview$(file: File): Observable<[string, string] | null> {
-		const existing = this.getThumbnailPreviewUrl(file.id);
-		if (existing) {
-			return of([file.id, existing]);
-		}
-
-		const inflight = this.thumbnailPreviewInFlight.get(file.id);
-		if (inflight) {
-			return inflight;
-		}
-
-		const request$ = this.fileService.downloadThumbnail(file.id, 'small').pipe(
-			take(1),
-			map((response) => {
-				if (!response.body) return null;
-				const previewUrl = URL.createObjectURL(response.body);
-				this.setThumbnailPreview(file.id, previewUrl);
-				return [file.id, previewUrl] as [string, string];
-			}),
-			catchError((err) => {
-				console.error('Failed to load image preview:', err);
-				return of(null);
-			}),
-			shareReplay({ bufferSize: 1, refCount: false }),
-		);
-
-		this.thumbnailPreviewInFlight.set(file.id, request$);
-		request$.pipe(take(1)).subscribe({
-			next: () => this.thumbnailPreviewInFlight.delete(file.id),
-			error: () => this.thumbnailPreviewInFlight.delete(file.id),
-		});
-
-		return request$;
-	}
-
-	private ensureFullImagePreview$(file: File): Observable<[string, string] | null> {
-		const existing = this.fullImagePreviewCache.get(file.id);
-		if (existing) {
-			return of([file.id, existing]);
-		}
-
-		return this.fileService.downloadFile(file.id).pipe(
-			timeout(15_000),
-			take(1),
-			map((response) => {
-				if (!response.body) return null;
-				const previewUrl = URL.createObjectURL(response.body);
-				this.fullImagePreviewCache.set(file.id, previewUrl);
-				return [file.id, previewUrl] as [string, string];
-			}),
-			catchError((err) => {
-				console.error('Failed to load full image preview:', err);
-				return of(null);
-			}),
-		);
-	}
-
-	private setThumbnailPreview(fileId: string, url: string): void {
-		this.thumbnailPreviewCache.set(fileId, {
-			url,
-			expiresAt: Date.now() + this.thumbnailPreviewTtlMs,
-			lastAccessedAt: Date.now(),
-		});
-		this.evictExcessThumbnailEntries();
-	}
-
-	private evictExcessThumbnailEntries(): void {
-		if (this.thumbnailPreviewCache.size <= this.maxThumbnailCacheSize) return;
-		const ordered = Array.from(this.thumbnailPreviewCache.entries()).sort(
-			(a, b) => a[1].lastAccessedAt - b[1].lastAccessedAt,
-		);
-
-		for (const [fileId, preview] of ordered) {
-			if (this.thumbnailPreviewCache.size <= this.maxThumbnailCacheSize) break;
-			this.removeThumbnailPreview(fileId);
-		}
-	}
-
-	private cleanupExpiredThumbnailPreviews(): void {
-		const now = Date.now();
-		for (const [fileId, preview] of this.thumbnailPreviewCache.entries()) {
-			if (preview.expiresAt > now) continue;
-			this.removeThumbnailPreview(fileId);
-		}
-	}
-
-	private removeThumbnailPreview(fileId: string): void {
-		const preview = this.thumbnailPreviewCache.get(fileId);
-		if (!preview) return;
-		URL.revokeObjectURL(preview.url);
-		this.thumbnailPreviewCache.delete(fileId);
-	}
-
-	private revokeAllImagePreviewUrls(): void {
-		for (const preview of this.thumbnailPreviewCache.values()) {
-			URL.revokeObjectURL(preview.url);
-		}
-		this.thumbnailPreviewCache.clear();
-		this.thumbnailPreviewInFlight.clear();
-
-		for (const previewUrl of this.fullImagePreviewCache.values()) {
-			URL.revokeObjectURL(previewUrl);
-		}
-		this.fullImagePreviewCache.clear();
 	}
 
 	private handleToolbarAction(action: { type: string }): void {

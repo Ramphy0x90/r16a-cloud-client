@@ -2,10 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
 import {
 	BehaviorSubject,
-	catchError,
 	map,
 	Observable,
-	of,
 	shareReplay,
 	startWith,
 	Subject,
@@ -18,6 +16,7 @@ import { ListView } from '../files/list-view/list-view';
 import { ImagePreviewModal, ImagePreviewModalState } from '../files/image-preview-modal/image-preview-modal';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
 import { FileService } from '../../services/file.service';
+import { ImagePreviewService } from '../../services/image-preview.service';
 import {
 	extractDownloadFilename,
 	isImageFile,
@@ -29,11 +28,13 @@ import {
 	imports: [CommonModule, FileOptions, GridView, ListView, ImagePreviewModal],
 	templateUrl: './shared.html',
 	styleUrl: './shared.css',
+	providers: [ImagePreviewService],
 })
 export class SharedPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
+	private readonly imagePreviewService = inject(ImagePreviewService);
 	private readonly triggerFilesFetch$ = new Subject<void>();
-	private readonly imagePreviewUrlsSubject = new Subject<Map<string, string>>();
+	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
 	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
 		show: false,
 		fileName: null,
@@ -47,6 +48,8 @@ export class SharedPage implements OnDestroy {
 	sortDirection: SortDirection = 'asc';
 	selectedFile: File | null = null;
 	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
+	readonly emptySelectedFileIds = new Set<string>();
+	readonly emptyImagePreviewMap = new Map<string, string>();
 
 	readonly files$: Observable<File[]> = this.triggerFilesFetch$.pipe(
 		startWith(void 0),
@@ -55,26 +58,11 @@ export class SharedPage implements OnDestroy {
 		shareReplay({ bufferSize: 1, refCount: true }),
 	);
 
-	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.imagePreviewUrlsSubject.pipe(
-		startWith(new Map<string, string>()),
-		shareReplay({ bufferSize: 1, refCount: true }),
-	);
-	readonly emptySelectedFileIds = new Set<string>();
-	readonly emptyImagePreviewMap = new Map<string, string>();
-	private readonly thumbnailUrls = new Map<string, string>();
-	private readonly fullPreviewUrls = new Map<string, string>();
-	private readonly thumbnailInFlight = new Set<string>();
+	readonly imagePreviewUrls$: Observable<Map<string, string>> =
+		this.imagePreviewUrlsSubject.asObservable();
 
 	ngOnDestroy(): void {
-		for (const url of this.thumbnailUrls.values()) {
-			URL.revokeObjectURL(url);
-		}
-		this.thumbnailUrls.clear();
-
-		for (const url of this.fullPreviewUrls.values()) {
-			URL.revokeObjectURL(url);
-		}
-		this.fullPreviewUrls.clear();
+		this.imagePreviewService.revokeAll();
 	}
 
 	onViewModeChange(mode: ViewMode): void {
@@ -103,22 +91,16 @@ export class SharedPage implements OnDestroy {
 
 	onImageVisible(file: File): void {
 		if (!isImageFile(file)) return;
-		if (this.thumbnailUrls.has(file.id) || this.thumbnailInFlight.has(file.id)) return;
+		if (this.imagePreviewService.getThumbnailUrl(file.id)) return;
 
-		this.thumbnailInFlight.add(file.id);
-		this.fileService
-			.downloadThumbnail(file.id, 'small')
+		this.imagePreviewService
+			.ensureThumbnail$(file)
 			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response.body) return;
-					const url = URL.createObjectURL(response.body);
-					this.thumbnailUrls.set(file.id, url);
-					const next = new Map(this.thumbnailUrls);
-					this.imagePreviewUrlsSubject.next(next);
-				},
-				error: (err) => console.error('Failed to load shared image thumbnail:', err),
-				complete: () => this.thumbnailInFlight.delete(file.id),
+			.subscribe((preview) => {
+				if (!preview) return;
+				const next = new Map(this.imagePreviewUrlsSubject.value);
+				next.set(preview[0], preview[1]);
+				this.imagePreviewUrlsSubject.next(next);
 			});
 	}
 
@@ -145,44 +127,17 @@ export class SharedPage implements OnDestroy {
 			loading: true,
 		};
 
-		const cached = this.fullPreviewUrls.get(file.id) ?? null;
-		if (cached) {
-			this.imagePreviewStateSubject.next({
-				...initialState,
-				url: cached,
-				loading: false,
-			});
-			return;
-		}
-
 		this.imagePreviewStateSubject.next(initialState);
-		this.fileService
-			.downloadFile(file.id)
-			.pipe(
-				take(1),
-				catchError((err) => {
-					console.error('Failed to load shared image preview:', err);
-					return of(null);
-				}),
-			)
-			.subscribe((response) => {
+
+		this.imagePreviewService
+			.ensureFullPreview$(file)
+			.pipe(take(1))
+			.subscribe((preview) => {
 				const current = this.imagePreviewStateSubject.value;
 				if (!current.show || current.fileId !== file.id) return;
-
-				if (!response?.body) {
-					this.imagePreviewStateSubject.next({
-						...current,
-						url: null,
-						loading: false,
-					});
-					return;
-				}
-
-				const url = URL.createObjectURL(response.body);
-				this.fullPreviewUrls.set(file.id, url);
 				this.imagePreviewStateSubject.next({
 					...current,
-					url,
+					url: preview?.[1] ?? null,
 					loading: false,
 				});
 			});

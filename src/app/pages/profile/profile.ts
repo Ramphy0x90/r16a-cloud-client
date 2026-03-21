@@ -8,6 +8,7 @@ import { changeTheme } from '../../store/app/app.actions';
 import { Theme } from '../../types/theme';
 import { ToggleSwitch } from '../../components/toggle-switch/toggle-switch';
 import { UserResponse } from '../../types/user';
+import { getUserInitials } from '../../utils/user-utils';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
 
 @Component({
@@ -37,9 +38,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 	private preferencesHydrated = false;
 
 	get userInitials(): string {
-		const parts = this.displayName.trim().split(/\s+/);
-		if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-		return this.displayName.slice(0, 2).toUpperCase() || '?';
+		return getUserInitials(this.displayName);
 	}
 
 	ngOnInit(): void {

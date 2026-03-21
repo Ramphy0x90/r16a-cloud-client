@@ -11,16 +11,10 @@ import {
 	SortField,
 	UpdateFileRequest,
 } from '../types/file';
-import { isImageFile as isImageFileUtil } from '../utils/file-utils';
-
 @Injectable({ providedIn: 'root' })
 export class FileService {
 	private readonly http = inject(HttpClient);
 	private readonly apiUrl = `${environment.apiUrl}/fs`;
-
-	isImageFile(file: File): boolean {
-		return isImageFileUtil(file);
-	}
 
 	getFiles(
 		ownerId: string,
