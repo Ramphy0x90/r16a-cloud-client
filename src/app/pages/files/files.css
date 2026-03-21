@@ -8,6 +8,23 @@
 	position: relative;
 }
 
+.files-load-more {
+	min-height: 1px;
+	padding: var(--space-2) 0;
+}
+
+.files-load-more-status {
+	margin: 0;
+	text-align: center;
+	font-size: 0.9rem;
+	opacity: 0.85;
+}
+
+.load-more-sentinel {
+	height: 1px;
+	width: 100%;
+}
+
 .upload-progress-overlay {
 	position: fixed;
 	bottom: var(--space-4);

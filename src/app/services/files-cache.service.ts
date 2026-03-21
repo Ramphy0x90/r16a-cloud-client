@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { map, Observable, shareReplay } from 'rxjs';
 import { FileService } from './file.service';
-import { File, SortDirection, SortField } from '../types/file';
+import { File, PageResponse, SortDirection, SortField } from '../types/file';
 
 interface FileListCacheEntry {
 	expiresAt: number;
-	files$: Observable<File[]>;
+	page$: Observable<PageResponse<File>>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -16,6 +16,35 @@ export class FilesCacheService {
 	private readonly entriesByKey = new Map<string, FileListCacheEntry>();
 	private readonly keysByFolder = new Map<string, Set<string>>();
 
+	getFilesPageCached(
+		ownerId: string,
+		parentId: string | null,
+		sortField: SortField = 'name',
+		sortDirection: SortDirection = 'asc',
+		page = 0,
+		size = 50,
+	): Observable<PageResponse<File>> {
+		const cacheKey = this.buildCacheKey(ownerId, parentId, sortField, sortDirection, page, size);
+		const now = Date.now();
+		const existing = this.entriesByKey.get(cacheKey);
+		if (existing && existing.expiresAt > now) {
+			return existing.page$;
+		}
+
+		const page$ = this.fileService
+			.getFiles(ownerId, parentId, sortField, sortDirection, page, size)
+			.pipe(shareReplay({ bufferSize: 1, refCount: false }));
+
+		this.entriesByKey.set(cacheKey, {
+			expiresAt: now + this.ttlMs,
+			page$,
+		});
+		this.trackKeyByFolder(this.buildFolderKey(ownerId, parentId), cacheKey);
+		this.pruneExpiredEntries(now);
+
+		return page$;
+	}
+
 	getFilesCached(
 		ownerId: string,
 		parentId: string | null,
@@ -24,28 +53,14 @@ export class FilesCacheService {
 		page = 0,
 		size = 50,
 	): Observable<File[]> {
-		const cacheKey = this.buildCacheKey(ownerId, parentId, sortField, sortDirection, page, size);
-		const now = Date.now();
-		const existing = this.entriesByKey.get(cacheKey);
-		if (existing && existing.expiresAt > now) {
-			return existing.files$;
-		}
-
-		const files$ = this.fileService
-			.getFiles(ownerId, parentId, sortField, sortDirection, page, size)
-			.pipe(
-				map((pageResult) => pageResult.content),
-				shareReplay({ bufferSize: 1, refCount: false }),
-			);
-
-		this.entriesByKey.set(cacheKey, {
-			expiresAt: now + this.ttlMs,
-			files$,
-		});
-		this.trackKeyByFolder(this.buildFolderKey(ownerId, parentId), cacheKey);
-		this.pruneExpiredEntries(now);
-
-		return files$;
+		return this.getFilesPageCached(
+			ownerId,
+			parentId,
+			sortField,
+			sortDirection,
+			page,
+			size,
+		).pipe(map((p) => p.content));
 	}
 
 	invalidateFolder(ownerId: string, parentId: string | null): void {

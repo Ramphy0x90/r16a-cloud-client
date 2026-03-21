@@ -72,6 +72,17 @@
 				(imageVisible)="onImageVisible($event)"
 			></list-view>
 		}
+
+		@if (hasMoreFiles || loadingMore) {
+			<div class="files-load-more" [attr.aria-busy]="loadingMore">
+				@if (loadingMore) {
+					<p class="files-load-more-status" role="status" aria-live="polite">Loading more…</p>
+				}
+				@if (hasMoreFiles && !loadingMore) {
+					<div class="load-more-sentinel" inViewport (inViewport)="loadMoreFiles()"></div>
+				}
+			</div>
+		}
 	} @else {
 		<div class="empty-state">
 			<i class="bi bi-cloud"></i>

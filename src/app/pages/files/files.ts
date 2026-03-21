@@ -43,6 +43,7 @@ import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FilesToolbar } from '../../components/files-toolbar/files-toolbar';
 import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
+import { InViewportDirective } from '../../directives/in-viewport.directive';
 import { selectUserPreferences } from '../../store/app/app.selector';
 import {
 	setFileToolbarState,
@@ -71,7 +72,15 @@ type ActiveModal =
 
 @Component({
 	selector: 'files-page',
-	imports: [CommonModule, FormsModule, ListView, GridView, FilesToolbar, ImagePreviewModal],
+	imports: [
+		CommonModule,
+		FormsModule,
+		ListView,
+		GridView,
+		FilesToolbar,
+		ImagePreviewModal,
+		InViewportDirective,
+	],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
 	providers: [ImagePreviewService],
@@ -108,22 +117,16 @@ export class FilesPage implements OnDestroy {
 	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
 	readonly emptyImagePreviewMap = new Map<string, string>();
 
-	readonly files$: Observable<File[]> = combineLatest([
-		this.triggerFilesFetch$.pipe(startWith(void 0)),
-		this.ownerId$,
-	]).pipe(
-		filter(([_, ownerId]) => ownerId != null),
-		switchMap(([_, ownerId]) =>
-			this.filesCacheService.getFilesCached(
-				ownerId,
-				this.currentFolder?.id ?? null,
-				this.sortField,
-				this.sortDirection,
-			),
-		),
-		shareReplay({ bufferSize: 1, refCount: true }),
-		takeUntil(this.destroy$),
-	);
+	private readonly filesSubject = new BehaviorSubject<File[]>([]);
+	readonly files$: Observable<File[]> = this.filesSubject.asObservable();
+
+	/** True when the server reports another page after the last loaded one. */
+	hasMoreFiles = false;
+	loadingMore = false;
+	private nextPageToLoad = 0;
+	private readonly pageSize = 50;
+	/** Bumps on each full list refresh so in-flight "load more" cannot append after navigation/sort. */
+	private fileListGeneration = 0;
 
 	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.imagePreviewUrlsSubject.pipe(
 		shareReplay({ bufferSize: 1, refCount: true }),
@@ -186,6 +189,34 @@ export class FilesPage implements OnDestroy {
 		this.actions$
 			.pipe(takeUntil(this.destroy$))
 			.subscribe((action) => this.handleToolbarAction(action));
+
+		combineLatest([this.triggerFilesFetch$.pipe(startWith(void 0)), this.ownerId$])
+			.pipe(
+				filter(([_, ownerId]) => ownerId != null),
+				switchMap(([_, ownerId]) => {
+					this.fileListGeneration++;
+					const gen = this.fileListGeneration;
+					return this.filesCacheService
+						.getFilesPageCached(
+							ownerId,
+							this.currentFolder?.id ?? null,
+							this.sortField,
+							this.sortDirection,
+							0,
+							this.pageSize,
+						)
+						.pipe(map((page) => ({ page, gen })));
+				}),
+				takeUntil(this.destroy$),
+			)
+			.subscribe(({ page, gen }) => {
+				if (gen !== this.fileListGeneration) return;
+				this.filesSubject.next(page.content);
+				this.hasMoreFiles = !page.last;
+				this.nextPageToLoad = page.number + 1;
+				this.loadingMore = false;
+				this.cdr.markForCheck();
+			});
 
 		this.files$
 			.pipe(takeUntil(this.destroy$))
@@ -616,6 +647,50 @@ export class FilesPage implements OnDestroy {
 
 	private openImagePreview(file: File): void {
 		this.imagePreviewOpen$.next(file);
+	}
+
+	loadMoreFiles(): void {
+		if (!this.hasMoreFiles || this.loadingMore) return;
+		const gen = this.fileListGeneration;
+		this.loadingMore = true;
+		this.cdr.markForCheck();
+		firstValueFrom(this.ownerId$).then((ownerId) => {
+			if (ownerId == null) {
+				this.loadingMore = false;
+				this.cdr.markForCheck();
+				return;
+			}
+			this.filesCacheService
+				.getFilesPageCached(
+					ownerId,
+					this.currentFolder?.id ?? null,
+					this.sortField,
+					this.sortDirection,
+					this.nextPageToLoad,
+					this.pageSize,
+				)
+				.pipe(take(1), takeUntil(this.destroy$))
+				.subscribe({
+					next: (page) => {
+						if (gen !== this.fileListGeneration) {
+							this.loadingMore = false;
+							this.cdr.markForCheck();
+							return;
+						}
+						this.filesSubject.next([...this.filesSubject.value, ...page.content]);
+						this.hasMoreFiles = !page.last;
+						this.nextPageToLoad = page.number + 1;
+						this.loadingMore = false;
+						this.cdr.markForCheck();
+					},
+					error: () => {
+						if (gen === this.fileListGeneration) {
+							this.loadingMore = false;
+						}
+						this.cdr.markForCheck();
+					},
+				});
+		});
 	}
 
 	private requestFilesRefresh(): void {
