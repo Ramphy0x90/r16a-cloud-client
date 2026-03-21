@@ -12,3 +12,13 @@ export const authGuard: CanActivateFn = () => {
 		map(({ isAuthenticated }) => isAuthenticated || router.createUrlTree(['/login'])),
 	);
 };
+
+export const guestGuard: CanActivateFn = () => {
+	const oidc = inject(OidcSecurityService);
+	const router = inject(Router);
+
+	return oidc.checkAuth().pipe(
+		take(1),
+		map(({ isAuthenticated }) => !isAuthenticated || router.createUrlTree(['/dashboard'])),
+	);
+};

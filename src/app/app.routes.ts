@@ -5,7 +5,7 @@ import { SharedPage } from './pages/shared/shared';
 import { ProfilePage } from './pages/profile/profile';
 import { CallbackPage } from './pages/callback/callback';
 import { LoginPage } from './pages/login/login';
-import { authGuard } from './guards/auth.guard';
+import { authGuard, guestGuard } from './guards/auth.guard';
 import { NavBarItem } from './types/nav-bar-item';
 
 export const enum ROUTES {
@@ -44,7 +44,7 @@ export const NAV_BAR_ROUTES: readonly NavBarItem[] = [
 ];
 
 export const routes: Routes = [
-	{ path: ROUTES.LOGIN, component: LoginPage },
+	{ path: ROUTES.LOGIN, component: LoginPage, canActivate: [guestGuard] },
 	{ path: ROUTES.CALLBACK, component: CallbackPage },
 	{ path: '', pathMatch: 'full', redirectTo: ROUTES.DASHBOARD },
 	{ path: ROUTES.DASHBOARD, component: DashboardPage, canActivate: [authGuard] },
