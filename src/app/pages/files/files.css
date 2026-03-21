@@ -13,7 +13,7 @@
 	bottom: var(--space-4);
 	right: var(--space-4);
 	z-index: 900;
-	max-width: min(420px, calc(100vw - var(--space-4) * 2));
+	width: min(420px, calc(100vw - var(--space-4) * 2));
 }
 
 .upload-progress-card {
@@ -22,6 +22,8 @@
 	border-radius: var(--radius);
 	padding: var(--space-3);
 	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+	min-width: 0;
+	box-sizing: border-box;
 }
 
 .upload-progress-title {
@@ -34,7 +36,10 @@
 	margin: 0 0 var(--space-2);
 	font-size: 0.85rem;
 	opacity: 0.85;
-	word-break: break-word;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .upload-progress-bar {
@@ -61,6 +66,8 @@
 	margin: 0 0 var(--space-2);
 	padding-left: var(--space-4);
 	font-size: 0.85rem;
+	max-height: min(40vh, 240px);
+	overflow-y: auto;
 }
 
 .upload-errors-dismiss {
