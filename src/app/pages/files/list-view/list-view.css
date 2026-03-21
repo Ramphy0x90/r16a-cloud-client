@@ -75,6 +75,21 @@
 	display: none;
 }
 
+.from-cell {
+	width: 140px;
+	min-width: 0;
+	justify-content: flex-start;
+	opacity: 0.85;
+	font-size: 0.8rem;
+	display: none;
+}
+
+.from-cell span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .date-cell {
 	width: 120px;
 	justify-content: flex-end;
@@ -147,6 +162,7 @@
 
 @media (min-width: 768px) {
 	.size-cell,
+	.from-cell,
 	.date-cell {
 		display: flex;
 	}

@@ -18,6 +18,7 @@ export class GridView {
 	@Input() selectionMode = false;
 	@Input() selectedFileIds: Set<string> = new Set();
 	@Input() imagePreviewUrls: Map<string, string> = new Map();
+	@Input() showSharedFrom = false;
 
 	@Output() fileClick = new EventEmitter<File>();
 	@Output() fileRename = new EventEmitter<{ file: File; event: Event }>();

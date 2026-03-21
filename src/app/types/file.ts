@@ -13,6 +13,7 @@ export interface File {
 	visibility: Visibility;
 	parentId: string | null;
 	ownerId: string;
+	ownerDisplayName: string;
 	sharedWithIds: string[];
 	createdAt: string;
 	updatedAt: string;

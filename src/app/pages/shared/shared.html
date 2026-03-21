@@ -23,6 +23,7 @@
 				[selectionMode]="false"
 				[selectedFileIds]="emptySelectedFileIds"
 				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				[showSharedFrom]="true"
 				(fileClick)="onFileClick($event)"
 				(imageVisible)="onImageVisible($event)"
 			></grid-view>
@@ -35,6 +36,7 @@
 				[selectionMode]="false"
 				[selectedFileIds]="emptySelectedFileIds"
 				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				[showSharedFrom]="true"
 				(fileClick)="onFileClick($event)"
 				(imageVisible)="onImageVisible($event)"
 			></list-view>

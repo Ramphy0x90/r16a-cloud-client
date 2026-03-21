@@ -29,7 +29,10 @@
 			<span class="file-card-name" [title]="file.name">{{ file.name }}</span>
 
 			@if (file.visibility === 'SHARED' || file.sharedWithIds.length > 0) {
-				<i class="bi bi-people-fill shared-indicator" title="Shared file"></i>
+				<i
+					class="bi bi-people-fill shared-indicator"
+					[attr.title]="showSharedFrom ? 'From: ' + file.ownerDisplayName : 'Shared file'"
+				></i>
 			}
 		</div>
 	}

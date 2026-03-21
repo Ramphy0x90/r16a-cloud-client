@@ -5,6 +5,9 @@
 		}
 
 		<div class="list-cell name-cell">Name</div>
+		@if (showSharedFrom) {
+			<div class="list-cell from-cell">From</div>
+		}
 		<div class="list-cell date-cell">Modified</div>
 	</div>
 
@@ -36,11 +39,17 @@
 				<span [title]="file.name">{{ file.name }}</span>
 			</div>
 
+			@if (showSharedFrom) {
+				<div class="list-cell from-cell">
+					<span [title]="file.ownerDisplayName">{{ file.ownerDisplayName }}</span>
+				</div>
+			}
+
 			<div class="list-cell date-cell">
 				{{ file.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
 			</div>
 
-			@if (file.visibility === 'SHARED' || file.sharedWithIds.length > 0) {
+			@if (!showSharedFrom && (file.visibility === 'SHARED' || file.sharedWithIds.length > 0)) {
 				<i class="bi bi-people-fill shared-indicator" title="Shared file"></i>
 			}
 		</div>
