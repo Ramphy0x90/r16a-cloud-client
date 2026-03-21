@@ -4,7 +4,7 @@ import { ToggleSwitch } from '../toggle-switch/toggle-switch';
 import { map, Observable } from 'rxjs';
 import { Theme } from '../../types/theme';
 import { selectTheme } from '../../store/app/app.selector';
-import { changeTheme } from '../../store/app/app.actions';
+import { patchUserPreferences } from '../../store/app/app.actions';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -41,10 +41,10 @@ export class QuickSettings {
 	}
 
 	private setLightTheme(): void {
-		this.store.dispatch(changeTheme({ theme: 'light' }));
+		this.store.dispatch(patchUserPreferences({ patch: { preferredTheme: 'light' } }));
 	}
 
 	private setDarkTheme(): void {
-		this.store.dispatch(changeTheme({ theme: 'dark' }));
+		this.store.dispatch(patchUserPreferences({ patch: { preferredTheme: 'dark' } }));
 	}
 }

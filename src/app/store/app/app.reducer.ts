@@ -1,19 +1,46 @@
 import { createReducer, on } from '@ngrx/store';
-import { Theme } from '../../types/theme';
-import { changeTheme } from './app.actions';
+import { UserPreferences } from '../../types/user';
+import { clearUserPreferences, patchUserPreferences, setUserPreferences } from './app.actions';
 
 export interface AppState {
-	theme: Theme;
+	userPreferences: UserPreferences | null;
+}
+
+export function defaultUserPreferences(): UserPreferences {
+	return {
+		preferredTheme: 'light',
+		encryptFilesByDefault: false,
+		defaultViewMode: 'grid',
+	};
+}
+
+function mergePreferences(
+	current: UserPreferences | null,
+	patch: Partial<UserPreferences>,
+): UserPreferences {
+	return {
+		...defaultUserPreferences(),
+		...(current ?? {}),
+		...patch,
+	};
 }
 
 export const initialState: AppState = {
-	theme: 'light',
+	userPreferences: null,
 };
 
 export const appReducer = createReducer(
 	initialState,
-	on(changeTheme, (state, prop) => ({
+	on(setUserPreferences, (state, { preferences }) => ({
 		...state,
-		theme: prop.theme,
+		userPreferences: preferences,
+	})),
+	on(patchUserPreferences, (state, { patch }) => ({
+		...state,
+		userPreferences: mergePreferences(state.userPreferences, patch),
+	})),
+	on(clearUserPreferences, (state) => ({
+		...state,
+		userPreferences: null,
 	})),
 );

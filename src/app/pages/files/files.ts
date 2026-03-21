@@ -27,12 +27,14 @@ import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
+import type { UserPreferences } from '../../types/user';
 import { UserResponse } from '../../types/user';
 import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FilesToolbar } from '../../components/files-toolbar/files-toolbar';
 import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
+import { selectUserPreferences } from '../../store/app/app.selector';
 import {
 	setFileToolbarState,
 	toolbarBreadcrumbClicked,
@@ -147,6 +149,18 @@ export class FilesPage implements OnDestroy {
 
 	constructor() {
 		this.syncToolbarState();
+
+		this.store
+			.select(selectUserPreferences)
+			.pipe(
+				filter((p): p is UserPreferences => p !== null),
+				take(1),
+				takeUntil(this.destroy$),
+			)
+			.subscribe((prefs) => {
+				this.viewMode = prefs.defaultViewMode;
+				this.scheduleToolbarSync();
+			});
 
 		this.actions$
 			.pipe(takeUntil(this.destroy$))

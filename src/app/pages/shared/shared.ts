@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
 import {
 	BehaviorSubject,
+	filter,
 	map,
 	Observable,
 	shareReplay,
@@ -9,14 +10,18 @@ import {
 	Subject,
 	switchMap,
 	take,
+	takeUntil,
 } from 'rxjs';
 import { FileOptions } from '../../components/file-options/file-options';
 import { GridView } from '../files/grid-view/grid-view';
 import { ListView } from '../files/list-view/list-view';
 import { ImagePreviewModal, ImagePreviewModalState } from '../files/image-preview-modal/image-preview-modal';
 import { File, SortDirection, SortField, ViewMode } from '../../types/file';
+import { Store } from '@ngrx/store';
 import { FileService } from '../../services/file.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
+import type { UserPreferences } from '../../types/user';
+import { selectUserPreferences } from '../../store/app/app.selector';
 import {
 	extractDownloadFilename,
 	isImageFile,
@@ -32,7 +37,9 @@ import {
 })
 export class SharedPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
+	private readonly store = inject(Store);
 	private readonly imagePreviewService = inject(ImagePreviewService);
+	private readonly destroy$ = new Subject<void>();
 	private readonly triggerFilesFetch$ = new Subject<void>();
 	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
 	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
@@ -61,7 +68,22 @@ export class SharedPage implements OnDestroy {
 	readonly imagePreviewUrls$: Observable<Map<string, string>> =
 		this.imagePreviewUrlsSubject.asObservable();
 
+	constructor() {
+		this.store
+			.select(selectUserPreferences)
+			.pipe(
+				filter((p): p is UserPreferences => p !== null),
+				take(1),
+				takeUntil(this.destroy$),
+			)
+			.subscribe((prefs) => {
+				this.viewMode = prefs.defaultViewMode;
+			});
+	}
+
 	ngOnDestroy(): void {
+		this.destroy$.next();
+		this.destroy$.complete();
 		this.imagePreviewService.revokeAll();
 	}
 

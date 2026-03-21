@@ -1,5 +1,15 @@
 import { createAction, props } from '@ngrx/store';
 import { features } from '../features';
-import { ChangeThemeProp } from './types';
+import { UserPreferences } from '../../types/user';
 
-export const changeTheme = createAction(`[${features.APP}] Change Theme`, props<ChangeThemeProp>());
+export const setUserPreferences = createAction(
+	`[${features.APP}] Set User Preferences`,
+	props<{ preferences: UserPreferences }>(),
+);
+
+export const patchUserPreferences = createAction(
+	`[${features.APP}] Patch User Preferences`,
+	props<{ patch: Partial<UserPreferences> }>(),
+);
+
+export const clearUserPreferences = createAction(`[${features.APP}] Clear User Preferences`);

@@ -51,6 +51,19 @@
 					</select>
 				</div>
 
+				<div class="field-group">
+					<label for="defaultViewMode">Default file view</label>
+					<select
+						id="defaultViewMode"
+						[(ngModel)]="defaultViewMode"
+						(ngModelChange)="schedulePersist()"
+					>
+						@for (mode of availableViewModes; track mode) {
+							<option [ngValue]="mode">{{ mode | titlecase }}</option>
+						}
+					</select>
+				</div>
+
 				<div class="field-group toggle-group">
 					<div class="toggle-label-group">
 						<span class="toggle-label">Encrypt files by default</span>

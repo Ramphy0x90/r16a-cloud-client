@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Subject, debounceTime, finalize, switchMap, takeUntil } from 'rxjs';
 import { UserService } from '../../services/user.service';
-import { changeTheme } from '../../store/app/app.actions';
+import { setUserPreferences } from '../../store/app/app.actions';
 import { Theme } from '../../types/theme';
 import { ToggleSwitch } from '../../components/toggle-switch/toggle-switch';
+import { ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
 import { getUserInitials } from '../../utils/user-utils';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
@@ -25,6 +26,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 	private readonly persistPreferences$ = new Subject<void>();
 
 	readonly availableThemes: Theme[] = ['light', 'dark'];
+	readonly availableViewModes: ViewMode[] = ['grid', 'list'];
 
 	loading = true;
 	saving = false;
@@ -34,6 +36,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 	username = '';
 	preferredTheme: Theme = 'light';
 	encryptFilesByDefault = false;
+	defaultViewMode: ViewMode = 'grid';
 
 	private preferencesHydrated = false;
 
@@ -63,6 +66,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 							preferences: {
 								preferredTheme: this.preferredTheme,
 								encryptFilesByDefault: this.encryptFilesByDefault,
+								defaultViewMode: this.defaultViewMode,
 							},
 						})
 						.pipe(
@@ -77,7 +81,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 			.subscribe({
 				next: (user) => {
 					this.setProfileState(user);
-					this.store.dispatch(changeTheme({ theme: user.preferences.preferredTheme }));
+					this.store.dispatch(setUserPreferences({ preferences: user.preferences }));
 				},
 				error: () => {
 					this.errorMessage = 'Could not save preferences. Please try again.';
@@ -100,6 +104,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 		this.username = user.username;
 		this.preferredTheme = user.preferences.preferredTheme;
 		this.encryptFilesByDefault = user.preferences.encryptFilesByDefault;
+		this.defaultViewMode = user.preferences.defaultViewMode;
 		this.loading = false;
 		this.preferencesHydrated = true;
 		this.cdr.markForCheck();

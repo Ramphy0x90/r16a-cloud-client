@@ -10,7 +10,7 @@ import { AuthService } from './services/auth.service';
 import { CommonModule } from '@angular/common';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { UserService } from './services/user.service';
-import { changeTheme } from './store/app/app.actions';
+import { clearUserPreferences, setUserPreferences } from './store/app/app.actions';
 
 @Component({
 	selector: 'app-root',
@@ -33,8 +33,14 @@ export class App implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		this.oidc.checkAuth().subscribe();
 
+		this.auth.isAuthenticated$.pipe(takeUntil(this.destroyed$)).subscribe((isAuthenticated) => {
+			if (!isAuthenticated) {
+				this.store.dispatch(clearUserPreferences());
+			}
+		});
+
 		this.userService.currentUser$.pipe(takeUntil(this.destroyed$)).subscribe((user) => {
-			this.store.dispatch(changeTheme({ theme: user.preferences.preferredTheme }));
+			this.store.dispatch(setUserPreferences({ preferences: user.preferences }));
 		});
 
 		this.currentTheme$.pipe(takeUntil(this.destroyed$)).subscribe((currentTheme) => {

@@ -1,8 +1,10 @@
+import { ViewMode } from './file';
 import { Theme } from './theme';
 
 export interface UserPreferences {
 	preferredTheme: Theme;
 	encryptFilesByDefault: boolean;
+	defaultViewMode: ViewMode;
 }
 
 export interface UserResponse {
