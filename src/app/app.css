@@ -1,3 +1,13 @@
+.auth-redirect-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--colour-background);
+}
+
 .root-container {
 	display: flex;
 	flex-direction: column;

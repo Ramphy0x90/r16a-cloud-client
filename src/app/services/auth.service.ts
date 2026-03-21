@@ -20,10 +20,6 @@ export class AuthService {
 		return this.oidc.checkAuth().pipe(map(({ isAuthenticated }) => isAuthenticated));
 	}
 
-	login(): void {
-		this.oidc.authorize();
-	}
-
 	logout(): void {
 		this.oidc.logoff().subscribe();
 	}

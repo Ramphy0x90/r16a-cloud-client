@@ -1,7 +1,8 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
+import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { authInterceptor, provideAuth } from 'angular-auth-oidc-client';
+import { authInterceptor, OidcSecurityService, provideAuth } from 'angular-auth-oidc-client';
+import { firstValueFrom, take } from 'rxjs';
 
 import { routes } from './app.routes';
 import { provideState, provideStore } from '@ngrx/store';
@@ -14,7 +15,11 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideBrowserGlobalErrorListeners(),
-		provideRouter(routes),
+		provideRouter(routes, withEnabledBlockingInitialNavigation()),
+		provideAppInitializer(() => {
+			const oidc = inject(OidcSecurityService);
+			return firstValueFrom(oidc.checkAuth().pipe(take(1)));
+		}),
 		provideHttpClient(withInterceptors([authInterceptor()])),
 		provideAuth({
 			config: {
@@ -29,7 +34,7 @@ export const appConfig: ApplicationConfig = {
 				useRefreshToken: true,
 				allowUnsafeReuseRefreshToken: true,
 				secureRoutes: [environment.apiUrl],
-				unauthorizedRoute: '/login',
+				unauthorizedRoute: '/callback',
 			},
 		}),
 		provideStore(),

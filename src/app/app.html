@@ -1,6 +1,8 @@
 <div class="root-container" [class.bg]="!(isAuthenticated$ | async)">
 	<div class="pages-render-space">
-		<app-header></app-header>
+		@if (isAuthenticated$ | async) {
+			<app-header></app-header>
+		}
 		<router-outlet />
 	</div>
 
@@ -10,3 +12,9 @@
 		</div>
 	}
 </div>
+
+@if (showRedirectOverlay$ | async) {
+	<div class="auth-redirect-overlay" aria-busy="true" aria-live="polite">
+		<loading-spinner></loading-spinner>
+	</div>
+}
