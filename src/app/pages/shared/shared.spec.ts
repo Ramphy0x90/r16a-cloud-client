@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Shared } from './shared';
+import { SharedPage } from './shared';
 
-describe('Shared', () => {
-  let component: Shared;
-  let fixture: ComponentFixture<Shared>;
+describe('SharedPage', () => {
+  let component: SharedPage;
+  let fixture: ComponentFixture<SharedPage>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Shared]
+      imports: [SharedPage]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(Shared);
+    fixture = TestBed.createComponent(SharedPage);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

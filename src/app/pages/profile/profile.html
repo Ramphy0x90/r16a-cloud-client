@@ -27,15 +27,24 @@
 		</section>
 
 		<section class="profile-card">
-			<div class="section-header">
-				<h2>Preferences</h2>
-				<p>Customize your default experience.</p>
+			<div class="section-header section-header--prefs">
+				<div class="section-header-titles">
+					<h2>Preferences</h2>
+					<p>Customize your default experience.</p>
+				</div>
+				@if (saving) {
+					<span class="saving-hint" aria-live="polite">Saving…</span>
+				}
 			</div>
 
 			<div class="preferences-grid">
 				<div class="field-group">
 					<label for="theme">Default theme</label>
-					<select id="theme" [(ngModel)]="preferredTheme">
+					<select
+						id="theme"
+						[(ngModel)]="preferredTheme"
+						(ngModelChange)="schedulePersist()"
+					>
 						@for (theme of availableThemes; track theme) {
 							<option [ngValue]="theme">{{ theme | titlecase }}</option>
 						}
@@ -47,23 +56,16 @@
 						<span class="toggle-label">Encrypt files by default</span>
 						<span class="toggle-description">Uploaded files will be encrypted automatically</span>
 					</div>
-					<toggle-switch [(ngModel)]="encryptFilesByDefault"></toggle-switch>
+					<toggle-switch
+						[(ngModel)]="encryptFilesByDefault"
+						(ngModelChange)="schedulePersist()"
+					></toggle-switch>
 				</div>
 			</div>
 
 			@if (errorMessage) {
 				<p class="feedback error">{{ errorMessage }}</p>
 			}
-
-			@if (successMessage) {
-				<p class="feedback success">{{ successMessage }}</p>
-			}
-
-			<div class="card-actions">
-				<button class="save-btn" (click)="savePreferences()" [disabled]="saving">
-					{{ saving ? 'Saving...' : 'Save preferences' }}
-				</button>
-			</div>
 		</section>
 	}
 </div>
