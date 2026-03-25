@@ -6,6 +6,11 @@
 
 	--radius: 8px;
 
+	--file-icon-size: clamp(3.5rem, 3.8vw, 4rem);
+	--file-min-cell-size: 120px;
+	--file-height: 120px;
+	--files-bottom-blur-height: 5rem;
+
 	box-sizing: border-box;
 	transition: all 122ms linear;
 }
