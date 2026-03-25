@@ -1,5 +1,6 @@
 .files-page {
-	--file-min-size: 120px;
+	--file-icon-size: clamp(3.5rem, 3.8vw, 4rem);
+	--file-min-cell-size: 120px;
 	--file-height: 120px;
 	--files-bottom-blur-height: 5rem;
 
