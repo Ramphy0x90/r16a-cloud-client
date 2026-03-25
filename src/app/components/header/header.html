@@ -1,9 +1,5 @@
 <header class="header-container">
 	<div class="actions-container">
-		<div class="action">
-			<quick-settings></quick-settings>
-		</div>
-
 		@if (isAuthenticated$ | async) {
 			<div class="action">
 				<button class="logout-btn" (click)="logout()" title="Sign out">
@@ -12,9 +8,9 @@
 			</div>
 
 			<div class="action">
-				<div class="profile-button">
+				<button class="profile-button" (click)="toProfile()">
 					{{ userInitials$ | async }}
-				</div>
+				</button>
 			</div>
 		}
 	</div>
