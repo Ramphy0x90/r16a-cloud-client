@@ -41,6 +41,11 @@
 
 /* Medium devices (tablets, 768px and up) */
 @media (min-width: 768px) {
+	::ng-deep .page {
+		height: 95%;
+		padding: var(--space-4) 0;
+	}
+
 	.root-container {
 		flex-direction: row-reverse;
 	}
