@@ -35,14 +35,21 @@ import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
-import { File, SortDirection, SortField, ViewMode } from '../../types/file';
+import { ActiveModal, File, SortDirection, SortField, ViewMode } from '../../types/file';
 import type { UserPreferences } from '../../types/user';
 import { UserResponse } from '../../types/user';
-import { extractDownloadFilename, isImageFile, triggerBrowserDownload } from '../../utils/file-utils';
+import {
+	extractDownloadFilename,
+	isImageFile,
+	triggerBrowserDownload,
+} from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
 import { GridView } from './grid-view/grid-view';
 import { FilesToolbar } from '../../components/files-toolbar/files-toolbar';
-import { ImagePreviewModal, ImagePreviewModalState } from './image-preview-modal/image-preview-modal';
+import {
+	ImagePreviewModal,
+	ImagePreviewModalState,
+} from './image-preview-modal/image-preview-modal';
 import { InViewportDirective } from '../../directives/in-viewport.directive';
 import { selectUserPreferences } from '../../store/app/app.selector';
 import {
@@ -61,14 +68,6 @@ import {
 	toolbarUploadClicked,
 	toolbarViewModeChanged,
 } from '../../store/file/file.actions';
-
-type ActiveModal =
-	| 'none'
-	| 'create-folder'
-	| 'rename'
-	| 'delete'
-	| 'bulk-delete'
-	| 'share';
 
 @Component({
 	selector: 'files-page',
@@ -101,6 +100,16 @@ export class FilesPage implements OnDestroy {
 		map((owner) => owner.id),
 	);
 
+	private readonly filesSubject = new BehaviorSubject<File[]>([]);
+	readonly files$: Observable<File[]> = this.filesSubject.asObservable();
+
+	private readonly shareUsersLoadingSubject = new BehaviorSubject<boolean>(false);
+	readonly shareUsersLoading$: Observable<boolean> = this.shareUsersLoadingSubject.asObservable();
+
+	private readonly shareCandidatesSubject = new BehaviorSubject<UserResponse[]>([]);
+	readonly shareCandidates$: Observable<UserResponse[]> =
+		this.shareCandidatesSubject.asObservable();
+
 	private readonly triggerFilesFetch$ = new Subject<void>();
 	private readonly imagePreviewLoadQueue$ = new Subject<File>();
 	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
@@ -114,24 +123,24 @@ export class FilesPage implements OnDestroy {
 		url: null,
 		loading: false,
 	});
+
 	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
 	readonly emptyImagePreviewMap = new Map<string, string>();
-
-	private readonly filesSubject = new BehaviorSubject<File[]>([]);
-	readonly files$: Observable<File[]> = this.filesSubject.asObservable();
-
-	/** True when the server reports another page after the last loaded one. */
-	hasMoreFiles = false;
-	loadingMore = false;
-	private nextPageToLoad = 0;
-	private readonly pageSize = 50;
-	/** Bumps on each full list refresh so in-flight "load more" cannot append after navigation/sort. */
-	private fileListGeneration = 0;
-
 	readonly imagePreviewUrls$: Observable<Map<string, string>> = this.imagePreviewUrlsSubject.pipe(
 		shareReplay({ bufferSize: 1, refCount: true }),
 		takeUntil(this.destroy$),
 	);
+
+	private nextPageToLoad = 0;
+	private readonly pageSize = 50;
+
+	/** Bumps on each full list refresh so in-flight "load more" cannot append after navigation/sort. */
+	private fileListGeneration = 0;
+	private toolbarSyncScheduled = false;
+
+	/** True when the server reports another page after the last loaded one. */
+	hasMoreFiles = false;
+	loadingMore = false;
 
 	viewMode: ViewMode = 'grid';
 	sortField: SortField = 'name';
@@ -149,12 +158,6 @@ export class FilesPage implements OnDestroy {
 	selectedShareUserIds = new Set<string>();
 	shareSaving = false;
 
-	private readonly shareUsersLoadingSubject = new BehaviorSubject<boolean>(false);
-	readonly shareUsersLoading$: Observable<boolean> = this.shareUsersLoadingSubject.asObservable();
-	private readonly shareCandidatesSubject = new BehaviorSubject<UserResponse[]>([]);
-	readonly shareCandidates$: Observable<UserResponse[]> =
-		this.shareCandidatesSubject.asObservable();
-
 	newFolderName = '';
 	renameName = '';
 
@@ -168,8 +171,6 @@ export class FilesPage implements OnDestroy {
 	} | null = null;
 
 	uploadErrors: string[] = [];
-
-	private toolbarSyncScheduled = false;
 
 	constructor() {
 		this.syncToolbarState();
@@ -218,14 +219,12 @@ export class FilesPage implements OnDestroy {
 				this.cdr.markForCheck();
 			});
 
-		this.files$
-			.pipe(takeUntil(this.destroy$))
-			.subscribe((files) => {
-				const imageFiles = files.filter(isImageFile);
-				this.imagePreviewUrlsSubject.next(
-					this.imagePreviewService.buildThumbnailMapForFiles(imageFiles),
-				);
-			});
+		this.files$.pipe(takeUntil(this.destroy$)).subscribe((files) => {
+			const imageFiles = files.filter(isImageFile);
+			this.imagePreviewUrlsSubject.next(
+				this.imagePreviewService.buildThumbnailMapForFiles(imageFiles),
+			);
+		});
 
 		this.imagePreviewLoadQueue$
 			.pipe(
@@ -748,7 +747,9 @@ export class FilesPage implements OnDestroy {
 				);
 				break;
 			case toolbarSelectionModeChanged.type:
-				this.onSelectionModeChange((action as ReturnType<typeof toolbarSelectionModeChanged>).enabled);
+				this.onSelectionModeChange(
+					(action as ReturnType<typeof toolbarSelectionModeChanged>).enabled,
+				);
 				break;
 			case toolbarShareClicked.type:
 				this.openShareSelected();
