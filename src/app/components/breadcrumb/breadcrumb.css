@@ -19,17 +19,7 @@
 	gap: 4px;
 }
 
-.breadcrumb-item:last-child {
-	opacity: 1;
-	font-weight: 600;
-}
-
 .breadcrumb-item:hover {
 	opacity: 1;
 	background-color: var(--colour-card);
-}
-
-.breadcrumb-separator {
-	opacity: 0.4;
-	font-size: 0.85rem;
 }
