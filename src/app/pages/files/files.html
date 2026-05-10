@@ -1,6 +1,22 @@
-<div class="page files-page">
+<div
+	class="page files-page"
+	[class.drag-active]="isDragging"
+	(dragenter)="onDragEnter($event)"
+	(dragover)="onDragOver($event)"
+	(dragleave)="onDragLeave($event)"
+	(drop)="onDrop($event)"
+>
 	<!-- Toolbar -->
 	<files-toolbar></files-toolbar>
+
+	@if (isDragging) {
+		<div class="drag-drop-overlay" aria-hidden="true">
+			<div class="drag-drop-content">
+				<i class="bi bi-cloud-arrow-up drag-drop-icon"></i>
+				<p class="drag-drop-label">Drop files to upload</p>
+			</div>
+		</div>
+	}
 
 	<input #fileInput type="file" (change)="onFileSelected($event)" hidden multiple />
 

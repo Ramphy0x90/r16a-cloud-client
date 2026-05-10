@@ -161,6 +161,9 @@ export class FilesPage implements OnDestroy {
 	newFolderName = '';
 	renameName = '';
 
+	isDragging = false;
+	private dragCounter = 0;
+
 	/** Shown while uploads are in progress (bounded concurrency). */
 	uploadOverlay: {
 		currentIndex: number;
@@ -357,12 +360,54 @@ export class FilesPage implements OnDestroy {
 	}
 
 	async onFileSelected(event: Event): Promise<void> {
-		const ownerId = await firstValueFrom(this.ownerId$);
 		const input = event.target as HTMLInputElement;
-
-		if (!input.files?.length || ownerId === null) return;
+		if (!input.files?.length) return;
 
 		const files = Array.from(input.files);
+		input.value = '';
+		await this.uploadFiles(files);
+	}
+
+	clearUploadErrors(): void {
+		this.uploadErrors = [];
+	}
+
+	onDragEnter(event: DragEvent): void {
+		event.preventDefault();
+		if (!event.dataTransfer?.types.includes('Files')) return;
+		this.dragCounter++;
+		this.isDragging = true;
+	}
+
+	onDragOver(event: DragEvent): void {
+		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+	}
+
+	onDragLeave(event: DragEvent): void {
+		this.dragCounter--;
+
+		if (this.dragCounter <= 0) {
+			this.dragCounter = 0;
+			this.isDragging = false;
+		}
+	}
+
+	async onDrop(event: DragEvent): Promise<void> {
+		event.preventDefault();
+		this.dragCounter = 0;
+		this.isDragging = false;
+
+		const files = Array.from(event.dataTransfer?.files ?? []);
+		if (!files.length) return;
+
+		await this.uploadFiles(files);
+	}
+
+	private async uploadFiles(files: globalThis.File[]): Promise<void> {
+		const ownerId = await firstValueFrom(this.ownerId$);
+		if (ownerId === null) return;
+
 		const parentId = this.currentFolder?.id ?? null;
 		const overallTotal = files.reduce((sum, f) => sum + f.size, 0);
 
@@ -390,7 +435,7 @@ export class FilesPage implements OnDestroy {
 					this.cdr.markForCheck();
 
 					return this.fileService
-						.uploadFile(ownerId, parentId, file, (loaded, total) => {
+						.uploadFile(ownerId, parentId, file, (loaded) => {
 							this.uploadOverlay = {
 								currentIndex: index + 1,
 								fileCount: files.length,
@@ -417,12 +462,6 @@ export class FilesPage implements OnDestroy {
 				takeUntil(this.destroy$),
 			)
 			.subscribe();
-
-		input.value = '';
-	}
-
-	clearUploadErrors(): void {
-		this.uploadErrors = [];
 	}
 
 	openCreateFolderModal(): void {
