@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { map, Observable } from 'rxjs';
+import { ImagePreviewService } from './image-preview.service';
 
 @Injectable({
 	providedIn: 'root',
 })
 export class AuthService {
 	private readonly oidc = inject(OidcSecurityService);
+	private readonly imagePreviewService = inject(ImagePreviewService);
 
 	readonly isAuthenticated$: Observable<boolean> = this.oidc.isAuthenticated$.pipe(
 		map((result) => result.isAuthenticated),
@@ -21,6 +23,7 @@ export class AuthService {
 	}
 
 	logout(): void {
+		this.imagePreviewService.revokeAll();
 		this.oidc.logoff().subscribe();
 	}
 

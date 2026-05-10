@@ -82,7 +82,6 @@ import {
 	],
 	templateUrl: './files.html',
 	styleUrl: './files.css',
-	providers: [ImagePreviewService],
 })
 export class FilesPage implements OnDestroy {
 	@ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -272,7 +271,6 @@ export class FilesPage implements OnDestroy {
 
 	ngOnDestroy(): void {
 		this.imagePreviewClose$.next();
-		this.imagePreviewService.revokeAll();
 		this.destroy$.next();
 		this.destroy$.complete();
 	}

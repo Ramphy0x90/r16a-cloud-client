@@ -33,7 +33,6 @@ import {
 	imports: [CommonModule, FileOptions, GridView, ListView, ImagePreviewModal],
 	templateUrl: './shared.html',
 	styleUrl: './shared.css',
-	providers: [ImagePreviewService],
 })
 export class SharedPage implements OnDestroy {
 	private readonly fileService = inject(FileService);
@@ -84,7 +83,6 @@ export class SharedPage implements OnDestroy {
 	ngOnDestroy(): void {
 		this.destroy$.next();
 		this.destroy$.complete();
-		this.imagePreviewService.revokeAll();
 	}
 
 	onViewModeChange(mode: ViewMode): void {

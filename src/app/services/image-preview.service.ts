@@ -9,7 +9,7 @@ interface CachedThumbnail {
 	lastAccessedAt: number;
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ImagePreviewService implements OnDestroy {
 	private readonly fileService = inject(FileService);
 
