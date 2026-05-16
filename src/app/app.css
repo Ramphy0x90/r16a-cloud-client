@@ -22,8 +22,10 @@
 
 .pages-render-space {
 	width: 100%;
-	height: 100%;
-	padding: var(--space-3);
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--space-3) var(--space-3) 0;
 }
 
 .nav-bar-render-space {
@@ -31,7 +33,7 @@
 }
 
 ::ng-deep .page {
-	height: 90%;
+	height: auto;
 	padding: var(--space-4) 0;
 }
 
