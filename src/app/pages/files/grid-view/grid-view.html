@@ -1,38 +1,50 @@
-<div class="files-grid">
-	@for (file of files$ | async; track file.id) {
+<div #gridContainer class="justified-grid">
+	@for (row of rows; track trackByRow($index, row)) {
 		<div
-			class="file-card"
-			[class.selected]="selectionMode ? selectedFileIds.has(file.id) : selectedFile?.id === file.id"
-			[class.selection-mode]="selectionMode"
-			(click)="onFileAction(file)"
+			class="justified-row"
+			[style.height.px]="row.height"
 		>
-			@if (selectionMode) {
-				<div class="file-card-checkbox">
-					<i
-						class="bi"
-						[ngClass]="selectedFileIds.has(file.id) ? 'bi-check-circle-fill' : 'bi-circle'"
-					></i>
+			@for (file of row.files; track file.id; let i = $index) {
+				<div
+					class="file-card"
+					[class.selected]="selectionMode ? selectedFileIds.has(file.id) : selectedFile?.id === file.id"
+					[class.selection-mode]="selectionMode"
+					[style.width.px]="row.widths[i]"
+					[style.height.px]="row.height"
+					(click)="onFileAction(file)"
+				>
+					@if (selectionMode) {
+						<div class="file-card-checkbox">
+							<i
+								class="bi"
+								[ngClass]="selectedFileIds.has(file.id) ? 'bi-check-circle-fill' : 'bi-circle'"
+							></i>
+						</div>
+					}
+
+					<div class="file-card-media" inViewport (inViewport)="onImageVisible(file)">
+						@if (isImageFile(file) && getImagePreviewUrl(file)) {
+							<img
+								class="file-card-image"
+								[src]="getImagePreviewUrl(file)!"
+								[alt]="file.name"
+							/>
+						} @else {
+							<i
+								class="bi file-card-icon"
+								[class.folder-icon]="file.isDirectory"
+								[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
+							></i>
+						}
+					</div>
+
+					<div class="file-card-footer">
+						<span class="file-card-name" [title]="file.name">{{ file.name }}</span>
+						@if (!showSharedFrom && (file.visibility === 'SHARED' || file.sharedWithIds.length > 0)) {
+							<i class="bi bi-people-fill shared-badge" title="Shared"></i>
+						}
+					</div>
 				</div>
-			}
-
-			<div class="file-card-icon bi" inViewport (inViewport)="onImageVisible(file)">
-				@if (isImageFile(file) && getImagePreviewUrl(file)) {
-					<img class="file-card-image-preview" [src]="getImagePreviewUrl(file)!" [alt]="file.name" />
-				} @else {
-					<i
-						class="bi"
-						[ngClass]="file.isDirectory ? 'bi-folder-fill' : (file.name | iconFromExtension)"
-					></i>
-				}
-			</div>
-
-			<span class="file-card-name" [title]="file.name">{{ file.name }}</span>
-
-			@if (file.visibility === 'SHARED' || file.sharedWithIds.length > 0) {
-				<i
-					class="bi bi-people-fill shared-indicator"
-					[attr.title]="showSharedFrom ? 'From: ' + file.ownerDisplayName : 'Shared file'"
-				></i>
 			}
 		</div>
 	}

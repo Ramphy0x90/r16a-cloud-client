@@ -13,6 +13,7 @@ import {
 	CursorPageResponse,
 	DashboardResponse,
 	File,
+	FileEventsResponse,
 	PageResponse,
 	SortDirection,
 	SortField,
@@ -218,6 +219,22 @@ export class FileService {
 			observe: 'response',
 			responseType: 'blob',
 		});
+	}
+
+	getDownloadToken(id: string): Observable<{ token: string }> {
+		return this.http.get<{ token: string }>(`${this.apiUrl}/${id}/download-token`);
+	}
+
+	getTokenDownloadUrl(token: string): string {
+		return `${this.apiUrl}/download/token?token=${encodeURIComponent(token)}`;
+	}
+
+	getFileEvents(ownerId: string, since: number, limit = 100): Observable<FileEventsResponse> {
+		const params = new HttpParams()
+			.set('ownerId', ownerId)
+			.set('since', since.toString())
+			.set('limit', limit.toString());
+		return this.http.get<FileEventsResponse>(`${this.apiUrl}/events`, { params });
 	}
 
 	downloadFiles(ids: string[]): Observable<HttpResponse<Blob>> {

@@ -54,6 +54,20 @@ export interface CursorPageResponse<T> {
 	hasMore: boolean;
 }
 
+export interface FileEventDto {
+	fileId: string;
+	parentId: string | null;
+	fileName: string;
+	eventType: 'CREATED' | 'UPDATED' | 'DELETED';
+	occurredAt: number;
+}
+
+export interface FileEventsResponse {
+	events: FileEventDto[];
+	nextCursor: number;
+	hasMore: boolean;
+}
+
 export interface DashboardMetrics {
 	uploadedFiles: number;
 	usedStorageBytes: number;

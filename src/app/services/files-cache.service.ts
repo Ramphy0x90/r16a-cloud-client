@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, shareReplay, tap } from 'rxjs';
+import { Observable, from, of, shareReplay, switchMap, tap } from 'rxjs';
 import { FileService } from './file.service';
+import { FileListingDbService } from './file-listing-db.service';
 import { CursorPageResponse, File, SortDirection, SortField } from '../types/file';
 
 interface CacheEntry {
@@ -11,12 +12,13 @@ interface CacheEntry {
 @Injectable({ providedIn: 'root' })
 export class FilesCacheService {
 	private readonly fileService = inject(FileService);
+	private readonly db = inject(FileListingDbService);
 
 	private readonly ttlMs = 60_000;
 	private readonly entriesByKey = new Map<string, CacheEntry>();
 	private readonly keysByFolder = new Map<string, Set<string>>();
 
-	/** First page — no cursor. */
+	/** First page — no cursor. Serves IndexedDB data instantly on first load. */
 	getFirstPageCached(
 		ownerId: string,
 		parentId: string | null,
@@ -25,7 +27,7 @@ export class FilesCacheService {
 		limit = 50,
 	): Observable<CursorPageResponse<File>> {
 		const cacheKey = this.buildFirstPageKey(ownerId, parentId, sortField, sortDirection, limit);
-		return this.getOrFetch(cacheKey, ownerId, parentId, () =>
+		return this.getOrFetchWithDb(cacheKey, ownerId, parentId, () =>
 			this.fileService.getFiles(ownerId, parentId, sortField, sortDirection, null, limit),
 		);
 	}
@@ -48,14 +50,51 @@ export class FilesCacheService {
 	invalidateFolder(ownerId: string, parentId: string | null): void {
 		const folderKey = this.buildFolderKey(ownerId, parentId);
 		const keys = this.keysByFolder.get(folderKey);
-		if (!keys) return;
-		for (const key of keys) this.entriesByKey.delete(key);
-		this.keysByFolder.delete(folderKey);
+		if (keys) {
+			for (const key of keys) this.entriesByKey.delete(key);
+			this.keysByFolder.delete(folderKey);
+		}
+		// Also evict from IndexedDB
+		this.db.deleteByPrefix(this.buildFolderKey(ownerId, parentId));
 	}
 
 	invalidateAll(): void {
 		this.entriesByKey.clear();
 		this.keysByFolder.clear();
+	}
+
+	/**
+	 * For first-page loads: check in-memory cache, then IndexedDB, then network.
+	 * Network response is always persisted back to IndexedDB.
+	 */
+	private getOrFetchWithDb(
+		cacheKey: string,
+		ownerId: string,
+		parentId: string | null,
+		fetch: () => Observable<CursorPageResponse<File>>,
+	): Observable<CursorPageResponse<File>> {
+		const now = Date.now();
+		const existing = this.entriesByKey.get(cacheKey);
+		if (existing && existing.expiresAt > now) return existing.page$;
+
+		const networkFetch$ = fetch().pipe(
+			tap({
+				next: (page) => this.db.set(cacheKey, page),
+				error: () => this.evictKey(cacheKey),
+			}),
+			shareReplay({ bufferSize: 1, refCount: false }),
+		);
+
+		// Try IndexedDB first, fall back to network fetch
+		const page$ = from(this.db.get(cacheKey)).pipe(
+			switchMap((cached) => (cached ? of(cached) : networkFetch$)),
+			shareReplay({ bufferSize: 1, refCount: false }),
+		);
+
+		this.entriesByKey.set(cacheKey, { expiresAt: now + this.ttlMs, page$ });
+		this.trackKeyByFolder(this.buildFolderKey(ownerId, parentId), cacheKey);
+		this.pruneExpiredEntries(now);
+		return page$;
 	}
 
 	private getOrFetch(

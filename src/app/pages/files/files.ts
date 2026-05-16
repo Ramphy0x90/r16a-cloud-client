@@ -34,6 +34,7 @@ import {
 } from 'rxjs';
 import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
+import { FileDeltaSyncService } from '../../services/file-delta-sync.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
 import { ActiveModal, CursorPageResponse, File, SortDirection, SortField, ViewMode } from '../../types/file';
@@ -89,6 +90,7 @@ export class FilesPage implements OnDestroy {
 
 	private readonly fileService = inject(FileService);
 	private readonly filesCacheService = inject(FilesCacheService);
+	private readonly deltaSyncService = inject(FileDeltaSyncService);
 	private readonly userService = inject(UserService);
 	private readonly cdr = inject(ChangeDetectorRef);
 	private readonly imagePreviewService = inject(ImagePreviewService);
@@ -194,6 +196,19 @@ export class FilesPage implements OnDestroy {
 			.pipe(takeUntil(this.destroy$))
 			.subscribe((action) => this.handleToolbarAction(action));
 
+		// Start delta sync once we have the user id
+		this.ownerId$.pipe(take(1), takeUntil(this.destroy$)).subscribe((ownerId) => {
+			this.deltaSyncService.start(ownerId);
+		});
+
+		// React to server-side changes detected by delta sync
+		this.deltaSyncService.folderChanged
+			.pipe(takeUntil(this.destroy$))
+			.subscribe(({ parentId }) => {
+				const currentParentId = this.currentFolder?.id ?? null;
+				if (parentId === currentParentId) this.requestFilesRefresh();
+			});
+
 		combineLatest([this.triggerFilesFetch$.pipe(startWith(void 0)), this.ownerId$])
 			.pipe(
 				filter(([_, ownerId]) => ownerId != null),
@@ -283,6 +298,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		this.deltaSyncService.stop();
 		this.imagePreviewClose$.next();
 		this.destroy$.next();
 		this.destroy$.complete();
@@ -651,26 +667,37 @@ export class FilesPage implements OnDestroy {
 		if (selectedFiles.length === 0) return;
 
 		const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-		const download$ =
-			singleSelected && !singleSelected.isDirectory
-				? this.fileService.downloadFile(singleSelected.id)
-				: this.fileService.downloadFiles(selectedIds);
 
-		download$.pipe(take(1)).subscribe({
-			next: (response) => {
-				if (!response.body) return;
-
-				const fallbackName =
-					singleSelected && !singleSelected.isDirectory
-						? singleSelected.name
-						: `download_${Date.now()}.zip`;
-
-				const filename = extractDownloadFilename(response) ?? fallbackName;
-				triggerBrowserDownload(response.body, filename);
-				this.cancelSelection();
-			},
-			error: (err) => console.error('Failed to download selected files:', err),
-		});
+		if (singleSelected && !singleSelected.isDirectory) {
+			// Use signed token — browser navigates directly, no blob needed
+			this.fileService
+				.getDownloadToken(singleSelected.id)
+				.pipe(take(1))
+				.subscribe({
+					next: ({ token }) => {
+						const url = this.fileService.getTokenDownloadUrl(token);
+						const a = document.createElement('a');
+						a.href = url;
+						a.download = singleSelected.name;
+						a.click();
+						this.cancelSelection();
+					},
+					error: (err) => console.error('Failed to get download token:', err),
+				});
+		} else {
+			this.fileService
+				.downloadFiles(selectedIds)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response.body) return;
+						const filename = extractDownloadFilename(response) ?? `download_${Date.now()}.zip`;
+						triggerBrowserDownload(response.body, filename);
+						this.cancelSelection();
+					},
+					error: (err) => console.error('Failed to download selected files:', err),
+				});
+		}
 	}
 
 	closeModals(): void {

@@ -26,5 +26,16 @@
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "thumbnails",
+      "urls": ["/api/fs/*/thumbnail**"],
+      "cacheConfig": {
+        "maxSize": 200,
+        "maxAge": "7d",
+        "strategy": "performance"
+      }
+    }
   ]
 }
