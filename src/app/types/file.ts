@@ -19,6 +19,7 @@ export interface File {
 	sharedWithIds: string[];
 	createdAt: string;
 	updatedAt: string;
+	blurHash: string | null;
 }
 
 export interface CreateFileRequest {
@@ -43,10 +44,14 @@ export interface PageResponse<T> {
 	content: T[];
 	totalElements: number;
 	totalPages: number;
-	size: number;
-	number: number;
-	first: boolean;
 	last: boolean;
+	number: number;
+}
+
+export interface CursorPageResponse<T> {
+	content: T[];
+	nextCursor: string | null;
+	hasMore: boolean;
 }
 
 export interface DashboardMetrics {

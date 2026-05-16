@@ -10,6 +10,7 @@ import { Observable, concatMap, filter, from, last, map, switchMap, tap } from '
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
+	CursorPageResponse,
 	DashboardResponse,
 	File,
 	PageResponse,
@@ -36,21 +37,19 @@ export class FileService {
 		parentId: string | null,
 		sortField: SortField = 'name',
 		sortDirection: SortDirection = 'asc',
-		page = 0,
-		size = 50,
-	): Observable<PageResponse<File>> {
+		cursor: string | null = null,
+		limit = 50,
+	): Observable<CursorPageResponse<File>> {
 		let params = new HttpParams()
-			.set('ownerId', ownerId.toString())
-			.set('page', page.toString())
-			.set('size', size.toString())
-			.append('sort', 'isDirectory,desc')
-			.append('sort', `${sortField},${sortDirection}`);
+			.set('ownerId', ownerId)
+			.set('sort', sortField)
+			.set('dir', sortDirection)
+			.set('limit', limit.toString());
 
-		if (parentId !== null) {
-			params = params.set('parentId', parentId.toString());
-		}
+		if (parentId !== null) params = params.set('parentId', parentId);
+		if (cursor !== null) params = params.set('cursor', cursor);
 
-		return this.http.get<PageResponse<File>>(this.apiUrl, { params });
+		return this.http.get<CursorPageResponse<File>>(this.apiUrl, { params });
 	}
 
 	getFilesSharedWithMe(

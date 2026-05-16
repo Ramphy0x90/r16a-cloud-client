@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { map, Observable, shareReplay } from 'rxjs';
+import { Observable, shareReplay, tap } from 'rxjs';
 import { FileService } from './file.service';
-import { File, PageResponse, SortDirection, SortField } from '../types/file';
+import { CursorPageResponse, File, SortDirection, SortField } from '../types/file';
 
-interface FileListCacheEntry {
+interface CacheEntry {
 	expiresAt: number;
-	page$: Observable<PageResponse<File>>;
+	page$: Observable<CursorPageResponse<File>>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -13,66 +13,43 @@ export class FilesCacheService {
 	private readonly fileService = inject(FileService);
 
 	private readonly ttlMs = 60_000;
-	private readonly entriesByKey = new Map<string, FileListCacheEntry>();
+	private readonly entriesByKey = new Map<string, CacheEntry>();
 	private readonly keysByFolder = new Map<string, Set<string>>();
 
-	getFilesPageCached(
+	/** First page — no cursor. */
+	getFirstPageCached(
 		ownerId: string,
 		parentId: string | null,
 		sortField: SortField = 'name',
 		sortDirection: SortDirection = 'asc',
-		page = 0,
-		size = 50,
-	): Observable<PageResponse<File>> {
-		const cacheKey = this.buildCacheKey(ownerId, parentId, sortField, sortDirection, page, size);
-		const now = Date.now();
-		const existing = this.entriesByKey.get(cacheKey);
-		if (existing && existing.expiresAt > now) {
-			return existing.page$;
-		}
-
-		const page$ = this.fileService
-			.getFiles(ownerId, parentId, sortField, sortDirection, page, size)
-			.pipe(shareReplay({ bufferSize: 1, refCount: false }));
-
-		this.entriesByKey.set(cacheKey, {
-			expiresAt: now + this.ttlMs,
-			page$,
-		});
-		this.trackKeyByFolder(this.buildFolderKey(ownerId, parentId), cacheKey);
-		this.pruneExpiredEntries(now);
-
-		return page$;
+		limit = 50,
+	): Observable<CursorPageResponse<File>> {
+		const cacheKey = this.buildFirstPageKey(ownerId, parentId, sortField, sortDirection, limit);
+		return this.getOrFetch(cacheKey, ownerId, parentId, () =>
+			this.fileService.getFiles(ownerId, parentId, sortField, sortDirection, null, limit),
+		);
 	}
 
-	getFilesCached(
+	/** Subsequent pages — identified by cursor. */
+	getNextPageCached(
 		ownerId: string,
 		parentId: string | null,
-		sortField: SortField = 'name',
-		sortDirection: SortDirection = 'asc',
-		page = 0,
-		size = 50,
-	): Observable<File[]> {
-		return this.getFilesPageCached(
-			ownerId,
-			parentId,
-			sortField,
-			sortDirection,
-			page,
-			size,
-		).pipe(map((p) => p.content));
+		cursor: string,
+		sortField: SortField,
+		sortDirection: SortDirection,
+		limit = 50,
+	): Observable<CursorPageResponse<File>> {
+		const cacheKey = `cursor::${cursor}`;
+		return this.getOrFetch(cacheKey, ownerId, parentId, () =>
+			this.fileService.getFiles(ownerId, parentId, sortField, sortDirection, cursor, limit),
+		);
 	}
 
 	invalidateFolder(ownerId: string, parentId: string | null): void {
 		const folderKey = this.buildFolderKey(ownerId, parentId);
-		const keysForFolder = this.keysByFolder.get(folderKey);
-		if (!keysForFolder) {
-			return;
-		}
-
-		for (const cacheKey of keysForFolder) {
-			this.entriesByKey.delete(cacheKey);
-		}
+		const keys = this.keysByFolder.get(folderKey);
+		if (!keys) return;
+		for (const key of keys) this.entriesByKey.delete(key);
 		this.keysByFolder.delete(folderKey);
 	}
 
@@ -81,30 +58,39 @@ export class FilesCacheService {
 		this.keysByFolder.clear();
 	}
 
-	private pruneExpiredEntries(referenceTs: number): void {
-		for (const [cacheKey, entry] of this.entriesByKey.entries()) {
-			if (entry.expiresAt > referenceTs) continue;
-			this.entriesByKey.delete(cacheKey);
-			this.removeKeyFromFolders(cacheKey);
-		}
+	private getOrFetch(
+		cacheKey: string,
+		ownerId: string,
+		parentId: string | null,
+		fetch: () => Observable<CursorPageResponse<File>>,
+	): Observable<CursorPageResponse<File>> {
+		const now = Date.now();
+		const existing = this.entriesByKey.get(cacheKey);
+		if (existing && existing.expiresAt > now) return existing.page$;
+
+		const page$ = fetch().pipe(
+			tap({ error: () => this.evictKey(cacheKey) }),
+			shareReplay({ bufferSize: 1, refCount: false }),
+		);
+		this.entriesByKey.set(cacheKey, { expiresAt: now + this.ttlMs, page$ });
+		this.trackKeyByFolder(this.buildFolderKey(ownerId, parentId), cacheKey);
+		this.pruneExpiredEntries(now);
+		return page$;
 	}
 
-	private buildCacheKey(
+	private evictKey(cacheKey: string): void {
+		this.entriesByKey.delete(cacheKey);
+		for (const keys of this.keysByFolder.values()) keys.delete(cacheKey);
+	}
+
+	private buildFirstPageKey(
 		ownerId: string,
 		parentId: string | null,
 		sortField: SortField,
 		sortDirection: SortDirection,
-		page: number,
-		size: number,
+		limit: number,
 	): string {
-		return [
-			ownerId,
-			parentId ?? 'root',
-			sortField,
-			sortDirection,
-			page.toString(),
-			size.toString(),
-		].join('::');
+		return [ownerId, parentId ?? 'root', sortField, sortDirection, limit].join('::');
 	}
 
 	private buildFolderKey(ownerId: string, parentId: string | null): string {
@@ -117,12 +103,11 @@ export class FilesCacheService {
 		this.keysByFolder.set(folderKey, keys);
 	}
 
-	private removeKeyFromFolders(cacheKey: string): void {
-		for (const [folderKey, keys] of this.keysByFolder.entries()) {
-			if (!keys.delete(cacheKey)) continue;
-			if (keys.size === 0) {
-				this.keysByFolder.delete(folderKey);
-			}
+	private pruneExpiredEntries(referenceTs: number): void {
+		for (const [key, entry] of this.entriesByKey.entries()) {
+			if (entry.expiresAt > referenceTs) continue;
+			this.entriesByKey.delete(key);
+			for (const keys of this.keysByFolder.values()) keys.delete(key);
 		}
 	}
 }

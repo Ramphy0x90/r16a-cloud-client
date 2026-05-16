@@ -30,12 +30,13 @@ import {
 	switchMap,
 	take,
 	takeUntil,
+	tap,
 } from 'rxjs';
 import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
-import { ActiveModal, File, SortDirection, SortField, ViewMode } from '../../types/file';
+import { ActiveModal, CursorPageResponse, File, SortDirection, SortField, ViewMode } from '../../types/file';
 import type { UserPreferences } from '../../types/user';
 import { UserResponse } from '../../types/user';
 import {
@@ -130,7 +131,7 @@ export class FilesPage implements OnDestroy {
 		takeUntil(this.destroy$),
 	);
 
-	private nextPageToLoad = 0;
+	private nextCursor: string | null = null;
 	private readonly pageSize = 50;
 
 	/** Bumps on each full list refresh so in-flight "load more" cannot append after navigation/sort. */
@@ -199,24 +200,36 @@ export class FilesPage implements OnDestroy {
 				switchMap(([_, ownerId]) => {
 					this.fileListGeneration++;
 					const gen = this.fileListGeneration;
+					this.loading = true;
+					this.cdr.markForCheck();
 					return this.filesCacheService
-						.getFilesPageCached(
+						.getFirstPageCached(
 							ownerId,
 							this.currentFolder?.id ?? null,
 							this.sortField,
 							this.sortDirection,
-							0,
 							this.pageSize,
 						)
-						.pipe(map((page) => ({ page, gen })));
+						.pipe(
+							map((page) => ({ page, gen })),
+							catchError((err) => {
+								console.error('Failed to load files:', err);
+								if (gen === this.fileListGeneration) {
+									this.loading = false;
+									this.cdr.markForCheck();
+								}
+								return EMPTY;
+							}),
+						);
 				}),
 				takeUntil(this.destroy$),
 			)
 			.subscribe(({ page, gen }) => {
 				if (gen !== this.fileListGeneration) return;
 				this.filesSubject.next(page.content);
-				this.hasMoreFiles = !page.last;
-				this.nextPageToLoad = page.number + 1;
+				this.hasMoreFiles = page.hasMore;
+				this.nextCursor = page.nextCursor;
+				this.loading = false;
 				this.loadingMore = false;
 				this.cdr.markForCheck();
 			});
@@ -686,8 +699,9 @@ export class FilesPage implements OnDestroy {
 	}
 
 	loadMoreFiles(): void {
-		if (!this.hasMoreFiles || this.loadingMore) return;
+		if (!this.hasMoreFiles || this.loadingMore || !this.nextCursor) return;
 		const gen = this.fileListGeneration;
+		const cursor = this.nextCursor;
 		this.loadingMore = true;
 		this.cdr.markForCheck();
 		firstValueFrom(this.ownerId$).then((ownerId) => {
@@ -697,12 +711,12 @@ export class FilesPage implements OnDestroy {
 				return;
 			}
 			this.filesCacheService
-				.getFilesPageCached(
+				.getNextPageCached(
 					ownerId,
 					this.currentFolder?.id ?? null,
+					cursor,
 					this.sortField,
 					this.sortDirection,
-					this.nextPageToLoad,
 					this.pageSize,
 				)
 				.pipe(take(1), takeUntil(this.destroy$))
@@ -714,15 +728,13 @@ export class FilesPage implements OnDestroy {
 							return;
 						}
 						this.filesSubject.next([...this.filesSubject.value, ...page.content]);
-						this.hasMoreFiles = !page.last;
-						this.nextPageToLoad = page.number + 1;
+						this.hasMoreFiles = page.hasMore;
+						this.nextCursor = page.nextCursor;
 						this.loadingMore = false;
 						this.cdr.markForCheck();
 					},
 					error: () => {
-						if (gen === this.fileListGeneration) {
-							this.loadingMore = false;
-						}
+						if (gen === this.fileListGeneration) this.loadingMore = false;
 						this.cdr.markForCheck();
 					},
 				});
