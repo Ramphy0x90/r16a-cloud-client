@@ -2,17 +2,20 @@
 	display: block;
 	overflow-y: auto;
 	flex: 1;
+	padding: 16px;
+	box-sizing: border-box;
 }
 
 .justified-grid {
-	padding: 0;
+	/* rows stack naturally */
 }
 
 .justified-row {
 	display: flex;
-	gap: 8px;
-	padding: 0 0 8px 0;
+	gap: 10px;
+	margin-bottom: 10px;
 	align-items: stretch;
+	overflow-x: hidden;
 }
 
 /* ── Individual card ─────────────────────────────────────── */
@@ -21,21 +24,27 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	border-radius: var(--radius);
+	border-radius: calc(var(--radius) + 2px);
 	cursor: pointer;
 	overflow: hidden;
 	flex-shrink: 0;
+	background: var(--colour-card);
+	transition: transform 120ms ease, box-shadow 120ms ease, outline-color 120ms ease;
+	outline: 2px solid transparent;
 }
 
 .file-card:hover {
-	outline: 1px solid var(--colour-card-hover);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+	outline-color: var(--colour-card-hover);
 }
 
 .file-card.selected {
-	outline: 2px solid var(--colour-primary);
+	outline-color: var(--colour-primary);
+	box-shadow: 0 0 0 1px var(--colour-primary), 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* ── Media area (fills the card minus footer) ─────────────── */
+/* ── Media area ───────────────────────────────────────────── */
 
 .file-card-media {
 	flex: 1;
@@ -44,8 +53,8 @@
 	justify-content: center;
 	overflow: hidden;
 	background-color: var(--colour-accent);
-	border-radius: var(--radius) var(--radius) 0 0;
 	min-height: 0;
+	border-radius: calc(var(--radius) + 2px) calc(var(--radius) + 2px) 0 0;
 }
 
 .file-card-image {
@@ -53,17 +62,26 @@
 	height: 100%;
 	object-fit: cover;
 	display: block;
+	transition: transform 200ms ease;
+}
+
+.file-card:hover .file-card-image {
+	transform: scale(1.03);
 }
 
 .file-card-icon {
-	font-size: 2.5rem;
-	opacity: 0.75;
+	font-size: 2.8rem;
+	opacity: 0.6;
 	line-height: 1;
+	pointer-events: none;
+	user-select: none;
 }
 
 .folder-icon {
-	color: var(--colour-primary);
+	color: var(--colour-folder);
 	opacity: 1;
+	font-size: 3rem;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 /* ── Footer ───────────────────────────────────────────────── */
@@ -71,50 +89,69 @@
 .file-card-footer {
 	display: flex;
 	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	background: var(--colour-background);
-	border-top: 1px solid var(--colour-card-hover);
+	gap: 6px;
+	padding: 6px 10px;
+	background: var(--colour-card);
 	flex-shrink: 0;
 	min-width: 0;
 }
 
 .file-card-name {
 	flex: 1;
-	font-size: 0.8rem;
+	font-size: 0.78rem;
 	font-weight: 500;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	color: var(--colour-foreground);
+	letter-spacing: 0.01em;
 }
 
-/* ── Overlays ─────────────────────────────────────────────── */
+/* ── Checkbox overlay ────────────────────────────────────── */
 
 .file-card-checkbox {
 	position: absolute;
-	top: 6px;
-	left: 6px;
-	opacity: 0.4;
-	color: var(--colour-foreground);
+	top: 8px;
+	left: 8px;
 	z-index: 1;
+	color: var(--colour-foreground);
+	opacity: 0;
+	transition: opacity 100ms ease;
+	background: rgba(0, 0, 0, 0.35);
+	border-radius: 50%;
+	width: 26px;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
 }
 
 .file-card-checkbox i {
-	font-size: 1.1rem;
+	font-size: 1rem;
+	line-height: 1;
+}
+
+.file-card.selection-mode .file-card-checkbox {
+	opacity: 0.5;
+}
+
+.file-card.selection-mode:hover .file-card-checkbox {
+	opacity: 0.9;
 }
 
 .file-card.selected .file-card-checkbox {
 	color: var(--colour-primary);
 	opacity: 1;
+	background: rgba(0, 0, 0, 0.5);
 }
 
-.file-card.selection-mode:hover .file-card-checkbox {
-	opacity: 0.8;
-}
+/* ── Shared badge ─────────────────────────────────────────── */
 
 .shared-badge {
-	font-size: 0.68rem;
+	font-size: 0.65rem;
 	color: var(--colour-primary);
-	opacity: 0.85;
+	opacity: 0.8;
 	flex-shrink: 0;
 }

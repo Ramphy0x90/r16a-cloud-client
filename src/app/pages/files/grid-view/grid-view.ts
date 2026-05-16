@@ -97,9 +97,10 @@ export class GridView extends FileViewBase implements OnInit, OnDestroy {
 		const flush = (isLast: boolean): void => {
 			if (rowFiles.length === 0) return;
 			const totalGap = GAP * (rowFiles.length - 1);
+			const maxHeight = (containerWidth - totalGap) / rowRatioSum;
 			const rowHeight = isLast
-				? TARGET_ROW_HEIGHT // last row keeps target height (no forced stretch)
-				: (containerWidth - totalGap) / rowRatioSum;
+				? Math.min(TARGET_ROW_HEIGHT, maxHeight)
+				: maxHeight;
 			const widths = rowFiles.map((f) => this.getRatio(f) * rowHeight);
 			rows.push({ files: rowFiles, widths, height: rowHeight });
 			rowFiles = [];

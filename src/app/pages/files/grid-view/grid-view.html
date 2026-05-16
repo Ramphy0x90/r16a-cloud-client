@@ -13,14 +13,12 @@
 					[style.height.px]="row.height"
 					(click)="onFileAction(file)"
 				>
-					@if (selectionMode) {
-						<div class="file-card-checkbox">
-							<i
-								class="bi"
-								[ngClass]="selectedFileIds.has(file.id) ? 'bi-check-circle-fill' : 'bi-circle'"
-							></i>
-						</div>
-					}
+					<div class="file-card-checkbox">
+						<i
+							class="bi"
+							[ngClass]="selectedFileIds.has(file.id) ? 'bi-check-circle-fill' : 'bi-circle'"
+						></i>
+					</div>
 
 					<div class="file-card-media" inViewport (inViewport)="onImageVisible(file)">
 						@if (isImageFile(file) && getImagePreviewUrl(file)) {
