@@ -7,15 +7,15 @@
 }
 
 .justified-grid {
-	/* rows stack naturally */
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .justified-row {
 	display: flex;
 	gap: 10px;
-	margin-bottom: 10px;
 	align-items: stretch;
-	overflow-x: hidden;
 }
 
 /* ── Individual card ─────────────────────────────────────── */

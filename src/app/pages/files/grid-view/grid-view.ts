@@ -89,6 +89,7 @@ export class GridView extends FileViewBase implements OnInit, OnDestroy {
 
 	private computeRows(files: File[], containerWidth: number): JustifiedRow[] {
 		if (containerWidth <= 0 || files.length === 0) return [];
+		containerWidth = Math.floor(containerWidth) - 1;
 
 		const rows: JustifiedRow[] = [];
 		let rowFiles: File[] = [];
