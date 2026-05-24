@@ -19,6 +19,7 @@ export interface File {
 	sharedWithIds: string[];
 	createdAt: string;
 	updatedAt: string;
+	takenAt: string | null;
 	blurHash: string | null;
 }
 
