@@ -18,6 +18,7 @@ import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
 import { File } from '../../types/file';
 import { isImageFile, isVideoFile } from '../../utils/file-utils';
+import { blurhashToDataUrl } from '../../utils/blurhash';
 import { InViewportDirective } from '../../directives/in-viewport.directive';
 import {
 	ImagePreviewModal,
@@ -182,6 +183,10 @@ export class PhotosPage implements OnDestroy {
 
 	isImageFile(photo: File): boolean {
 		return isImageFile(photo);
+	}
+
+	blurhashToDataUrl(hash: string): string {
+		return blurhashToDataUrl(hash);
 	}
 
 	private loadPhotosForSection(section: YearSection): void {

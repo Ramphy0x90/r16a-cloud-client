@@ -196,6 +196,11 @@
 	background: var(--colour-card);
 }
 
+.photo-placeholder--blur {
+	background-size: cover;
+	background-position: center;
+}
+
 .photo-placeholder.shimmer {
 	background: linear-gradient(
 		90deg,

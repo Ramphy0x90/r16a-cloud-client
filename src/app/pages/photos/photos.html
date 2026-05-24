@@ -69,6 +69,11 @@
 											loading="lazy"
 											decoding="async"
 										/>
+									} @else if (photo.blurHash) {
+										<div
+											class="photo-placeholder photo-placeholder--blur"
+											[style.background-image]="'url(' + blurhashToDataUrl(photo.blurHash) + ')'"
+										></div>
 									} @else {
 										<div class="photo-placeholder"></div>
 									}
