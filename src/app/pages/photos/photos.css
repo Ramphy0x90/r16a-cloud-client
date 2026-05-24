@@ -3,8 +3,19 @@
 .photos-page {
 	display: flex;
 	flex-direction: column;
-	overflow-y: auto;
+	/* On mobile, overflow-y:auto creates an intermediate scroll container that
+	   intercepts position:sticky without actually scrolling (height:auto).
+	   Removing it lets .pages-render-space own the scroll and sticky context. */
+	overflow-y: visible;
 	padding: 0 !important;
+}
+
+@media (min-width: 768px) {
+	.photos-page {
+		overflow-y: auto;
+		/* height is set to 95% by ::ng-deep .page in app.css — fits within
+		   .pages-render-space padding so no double scrollbar */
+	}
 }
 
 /* ── Loading / empty ─────────────────────────────────────────────────── */
