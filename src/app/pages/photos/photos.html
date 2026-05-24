@@ -1,0 +1,105 @@
+@let previewUrls = (imagePreviewUrls$ | async) ?? emptyPreviewMap;
+
+<div class="page photos-page">
+	@if (loading) {
+		<div class="photos-loading">
+			<div class="loading-spinner"></div>
+		</div>
+	} @else if (yearSections.length === 0) {
+		<div class="empty-state">
+			<i class="bi bi-images"></i>
+			<h3>No photos yet</h3>
+			<p>Upload photos or videos to see them here</p>
+		</div>
+	} @else {
+		@for (section of yearSections; track section.year) {
+			<section class="year-section">
+
+				<!-- Year header + invisible load trigger -->
+				<div class="year-header">
+					<h2 class="year-label">{{ section.year }}</h2>
+					<span class="year-count">{{ section.totalCount }} {{ section.totalCount === 1 ? 'photo' : 'photos' }}</span>
+				</div>
+
+				<!-- Trigger: fires when section scrolls near viewport -->
+				@if (!section.loadStarted) {
+					<div class="year-load-trigger" inViewport (inViewport)="onYearVisible(section)"></div>
+				}
+
+				<!-- Skeleton while first load is in flight -->
+				@if (section.loading && section.photos.length === 0) {
+					<div class="photo-grid">
+						@for (item of skeletonItems; track $index) {
+							<div class="photo-item">
+								<div class="photo-placeholder shimmer"></div>
+							</div>
+						}
+					</div>
+				}
+
+				<!-- Photos grid -->
+				@if (section.photos.length > 0) {
+					<div class="photo-grid">
+						@for (photo of section.photos; track photo.id) {
+							<div
+								class="photo-item"
+								(click)="openPhotoPreview(photo)"
+								[class.photo-item--video]="isVideoFile(photo)"
+								[attr.aria-label]="photo.name"
+								role="button"
+								tabindex="0"
+								(keydown.enter)="openPhotoPreview(photo)"
+								(keydown.space)="openPhotoPreview(photo)"
+							>
+								<div
+									class="photo-media"
+									inViewport
+									(inViewport)="onPhotoVisible(photo)"
+								>
+									@if (isVideoFile(photo)) {
+										<div class="photo-video-placeholder">
+											<i class="bi bi-play-circle-fill"></i>
+											<span class="photo-video-label">{{ photo.name }}</span>
+										</div>
+									} @else if (previewUrls.get(photo.id)) {
+										<img
+											class="photo-thumb"
+											[src]="previewUrls.get(photo.id)!"
+											[alt]="photo.name"
+											loading="lazy"
+											decoding="async"
+										/>
+									} @else {
+										<div class="photo-placeholder"></div>
+									}
+								</div>
+							</div>
+						}
+					</div>
+				}
+
+				<!-- Load more per year -->
+				@if (section.loading && section.photos.length > 0) {
+					<div class="year-loading-more" role="status" aria-live="polite">
+						<div class="loading-spinner-small"></div>
+					</div>
+				}
+				@if (section.hasMore && !section.loading) {
+					<div
+						class="load-more-sentinel"
+						inViewport
+						(inViewport)="loadMoreForYear(section)"
+					></div>
+				}
+
+			</section>
+		}
+
+		<div class="photos-bottom-spacer" aria-hidden="true"></div>
+	}
+</div>
+
+<image-preview-modal
+	[state]="imagePreviewState$ | async"
+	(close)="closeImagePreview()"
+></image-preview-modal>

@@ -3,7 +3,16 @@ import { HttpResponse } from '@angular/common/http';
 
 export function isImageFile(file: File): boolean {
 	if (file.isDirectory) return false;
-	return /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+	return /\.(avif|bmp|gif|heic|heif|jpe?g|png|svg|webp)$/i.test(file.name);
+}
+
+export function isVideoFile(file: File): boolean {
+	if (file.isDirectory) return false;
+	return /\.(avi|m4v|mkv|mov|mp4|webm)$/i.test(file.name);
+}
+
+export function isMediaFile(file: File): boolean {
+	return isImageFile(file) || isVideoFile(file);
 }
 
 export function extractDownloadFilename(response: HttpResponse<Blob>): string | null {

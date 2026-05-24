@@ -86,3 +86,8 @@ export interface DashboardResponse {
 	metrics: DashboardMetrics;
 	recentFiles: RecentFileItem[];
 }
+
+export interface PhotoYearSummary {
+	year: number;
+	count: number;
+}
