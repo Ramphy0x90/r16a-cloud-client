@@ -25,8 +25,4 @@ export class Header {
 	toProfile(): void {
 		this.router.navigate([ROUTES.PROFILE]);
 	}
-
-	logout(): void {
-		this.authService.logout();
-	}
 }

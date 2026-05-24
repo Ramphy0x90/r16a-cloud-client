@@ -40,11 +40,7 @@
 			<div class="preferences-grid">
 				<div class="field-group">
 					<label for="theme">Default theme</label>
-					<select
-						id="theme"
-						[(ngModel)]="preferredTheme"
-						(ngModelChange)="schedulePersist()"
-					>
+					<select id="theme" [(ngModel)]="preferredTheme" (ngModelChange)="schedulePersist()">
 						@for (theme of availableThemes; track theme) {
 							<option [ngValue]="theme">{{ theme | titlecase }}</option>
 						}
@@ -79,6 +75,21 @@
 			@if (errorMessage) {
 				<p class="feedback error">{{ errorMessage }}</p>
 			}
+		</section>
+
+		<section class="profile-card">
+			<div class="section-header section-header--prefs">
+				<div class="section-header-titles">
+					<h2>Authentication</h2>
+					<p>Manage sessions</p>
+				</div>
+			</div>
+
+			<div class="action">
+				<button class="logout-btn action-btn" (click)="logout()" title="Sign out">
+					<i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+				</button>
+			</div>
 		</section>
 	}
 </div>

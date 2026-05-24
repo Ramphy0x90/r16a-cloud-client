@@ -11,6 +11,7 @@ import { ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
 import { getUserInitials } from '../../utils/user-utils';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
 	selector: 'profile-page',
@@ -19,6 +20,7 @@ import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner
 	styleUrl: './profile.css',
 })
 export class ProfilePage implements OnInit, OnDestroy {
+	private readonly authService = inject(AuthService);
 	private readonly userService = inject(UserService);
 	private readonly store: Store = inject(Store);
 	private readonly cdr = inject(ChangeDetectorRef);
@@ -97,6 +99,10 @@ export class ProfilePage implements OnInit, OnDestroy {
 	schedulePersist(): void {
 		if (!this.preferencesHydrated) return;
 		this.persistPreferences$.next();
+	}
+
+	logout(): void {
+		this.authService.logout();
 	}
 
 	private setProfileState(user: UserResponse): void {

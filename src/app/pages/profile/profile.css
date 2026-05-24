@@ -105,6 +105,11 @@
 	opacity: 0.6;
 }
 
+.logout-btn {
+	background-color: var(--colour-alert);
+	gap: var(--space-1);
+}
+
 /* Grids */
 
 .identity-grid,
@@ -194,4 +199,3 @@
 .feedback.error {
 	color: var(--colour-alert);
 }
-
