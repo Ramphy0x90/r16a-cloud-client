@@ -55,16 +55,22 @@ export class DashboardPage {
 
 	readonly metrics: MetricData[] = [
 		{
+			icon: 'bi-hdd',
+			accentColour: '#e23636',
+			title: 'Used storage',
+			data: (data) => this.sizePipe.transform(data['usedStorageBytes']),
+		},
+		{
 			icon: 'bi-cloud-upload',
-			accentColour: 'var(--colour-primary)',
+			accentColour: '#f59e0b',
 			title: 'Files uploaded',
 			data: (data) => data['uploadedFiles'],
 		},
 		{
-			icon: 'bi-hdd',
-			accentColour: '#f59e0b',
-			title: 'Used storage',
-			data: (data) => this.sizePipe.transform(data['usedStorageBytes']),
+			icon: 'bi-image',
+			accentColour: '#10b981',
+			title: 'Photos & videos',
+			data: (data) => data['uploadedPhotos'],
 		},
 		{
 			icon: 'bi-share',

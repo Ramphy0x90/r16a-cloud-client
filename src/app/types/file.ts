@@ -73,6 +73,7 @@ export interface DashboardMetrics {
 	uploadedFiles: number;
 	usedStorageBytes: number;
 	sharedFiles: number;
+	uploadedPhotos: number;
 }
 
 export interface RecentFileItem {
