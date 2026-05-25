@@ -11,6 +11,17 @@
 			<div class="image-modal-content">
 				@if (state?.url) {
 					<img class="image-modal-preview" [src]="state?.url" [alt]="state?.fileName ?? 'Image'" />
+				} @else if (state?.thumbnailUrl) {
+					<img
+						class="image-modal-preview image-modal-preview--placeholder"
+						[src]="state?.thumbnailUrl"
+						[alt]="state?.fileName ?? 'Image'"
+					/>
+				} @else if (state?.blurHash) {
+					<div
+						class="image-modal-preview image-modal-preview--placeholder image-modal-blurhash"
+						[style.background-image]="'url(' + blurhashToDataUrl(state!.blurHash!) + ')'"
+					></div>
 				} @else if (state?.loading) {
 					<div class="loading-container image-modal-loading">
 						<div class="loading-spinner"></div>

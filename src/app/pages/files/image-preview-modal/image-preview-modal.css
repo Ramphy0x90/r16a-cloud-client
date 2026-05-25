@@ -100,6 +100,18 @@
 	border-radius: var(--radius);
 }
 
+.image-modal-preview--placeholder {
+	filter: blur(12px);
+	transform: scale(1.04);
+}
+
+.image-modal-blurhash {
+	width: 100%;
+	height: calc(92vh - 128px);
+	background-size: cover;
+	background-position: center;
+}
+
 .modal-text {
 	margin: 0;
 	opacity: 0.7;

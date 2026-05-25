@@ -46,6 +46,8 @@ export class SharedPage implements OnDestroy {
 		fileName: null,
 		fileId: null,
 		url: null,
+		thumbnailUrl: null,
+		blurHash: null,
 		loading: false,
 	});
 
@@ -130,6 +132,8 @@ export class SharedPage implements OnDestroy {
 			fileName: null,
 			fileId: null,
 			url: null,
+			thumbnailUrl: null,
+			blurHash: null,
 			loading: false,
 		});
 	}
@@ -144,6 +148,8 @@ export class SharedPage implements OnDestroy {
 			fileName: file.name,
 			fileId: file.id,
 			url: null,
+			thumbnailUrl: this.imagePreviewService.getThumbnailUrl(file.id),
+			blurHash: file.blurHash,
 			loading: true,
 		};
 

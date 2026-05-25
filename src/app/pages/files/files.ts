@@ -124,6 +124,8 @@ export class FilesPage implements OnDestroy {
 		fileName: null,
 		fileId: null,
 		url: null,
+		thumbnailUrl: null,
+		blurHash: null,
 		loading: false,
 	});
 
@@ -278,6 +280,8 @@ export class FilesPage implements OnDestroy {
 						fileName: file.name,
 						fileId: file.id,
 						url: null,
+						thumbnailUrl: this.imagePreviewService.getThumbnailUrl(file.id),
+						blurHash: file.blurHash,
 						loading: true,
 					};
 
@@ -739,6 +743,8 @@ export class FilesPage implements OnDestroy {
 			fileName: null,
 			fileId: null,
 			url: null,
+			thumbnailUrl: null,
+			blurHash: null,
 			loading: false,
 		});
 	}
