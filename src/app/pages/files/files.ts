@@ -31,6 +31,7 @@ import {
 	take,
 	takeUntil,
 	tap,
+	throwError,
 } from 'rxjs';
 import { FileService } from '../../services/file.service';
 import { FilesCacheService } from '../../services/files-cache.service';
@@ -612,18 +613,27 @@ export class FilesPage implements OnDestroy {
 	confirmDelete(): void {
 		if (!this.modalFile) return;
 
-		const idToDelete = this.modalFile.id;
+		const fileToDelete = this.modalFile;
+		const idToDelete = fileToDelete.id;
 
 		this.fileService
 			.deleteFile(idToDelete)
-			.pipe(take(1))
-			.subscribe({
-				next: () => {
-					if (this.selectedFile?.id === idToDelete) this.selectedFile = null;
-					this.closeModals();
-					this.refreshCurrentFolderAfterMutation();
-				},
-				error: (err) => console.error('Failed to delete:', err),
+			.pipe(
+				take(1),
+				catchError((err) => {
+					// 404 means already deleted — treat as success
+					if (err?.status === 404) return of(undefined as void);
+					console.error('Failed to delete:', err);
+					return EMPTY;
+				}),
+			)
+			.subscribe(() => {
+				if (this.selectedFile?.id === idToDelete) this.selectedFile = null;
+				this.closeModals();
+				this.filesSubject.next(this.filesSubject.value.filter((f) => f.id !== idToDelete));
+				if (fileToDelete.isDirectory) {
+					this.invalidateDeletedFolderCache(fileToDelete.id);
+				}
 			});
 	}
 
@@ -636,13 +646,25 @@ export class FilesPage implements OnDestroy {
 		const ids = Array.from(this.selectedFileIds);
 		if (ids.length === 0) return;
 
-		forkJoin(ids.map((id) => this.fileService.deleteFile(id)))
+		const idSet = new Set(ids);
+		const deletedFolderIds = this.filesSubject.value
+			.filter((f) => f.isDirectory && idSet.has(f.id))
+			.map((f) => f.id);
+
+		forkJoin(
+			ids.map((id) =>
+				this.fileService.deleteFile(id).pipe(
+					catchError((err) => (err?.status === 404 ? of(undefined as void) : throwError(() => err))),
+				),
+			),
+		)
 			.pipe(take(1))
 			.subscribe({
 				next: () => {
 					this.activeModal = 'none';
 					this.cancelSelection();
-					this.refreshCurrentFolderAfterMutation();
+					this.filesSubject.next(this.filesSubject.value.filter((f) => !idSet.has(f.id)));
+					deletedFolderIds.forEach((id) => this.invalidateDeletedFolderCache(id));
 				},
 				error: (err) => {
 					console.error('Failed to delete files:', err);
@@ -776,6 +798,11 @@ export class FilesPage implements OnDestroy {
 		const ownerId = await firstValueFrom(this.ownerId$);
 		this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
 		this.requestFilesRefresh();
+	}
+
+	private async invalidateDeletedFolderCache(deletedFolderId: string): Promise<void> {
+		const ownerId = await firstValueFrom(this.ownerId$);
+		this.filesCacheService.invalidateFolder(ownerId, deletedFolderId);
 	}
 
 	private loadShareCandidates(): void {
