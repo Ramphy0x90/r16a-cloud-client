@@ -20,6 +20,11 @@
 						[src]="getImagePreviewUrl(file)!"
 						[alt]="file.name"
 					/>
+				} @else if (isImageFile(file) && file.blurHash) {
+					<div
+						class="file-card-blurhash"
+						[style.background-image]="'url(' + blurhashToDataUrl(file.blurHash) + ')'"
+					></div>
 				} @else {
 					<i
 						class="bi file-card-icon"
