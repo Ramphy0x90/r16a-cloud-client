@@ -38,7 +38,14 @@ import { FilesCacheService } from '../../services/files-cache.service';
 import { FileDeltaSyncService } from '../../services/file-delta-sync.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
-import { ActiveModal, CursorPageResponse, File, SortDirection, SortField, ViewMode } from '../../types/file';
+import {
+	ActiveModal,
+	CursorPageResponse,
+	File,
+	SortDirection,
+	SortField,
+	ViewMode,
+} from '../../types/file';
 import type { UserPreferences } from '../../types/user';
 import { UserResponse } from '../../types/user';
 import {
@@ -205,12 +212,10 @@ export class FilesPage implements OnDestroy {
 		});
 
 		// React to server-side changes detected by delta sync
-		this.deltaSyncService.folderChanged
-			.pipe(takeUntil(this.destroy$))
-			.subscribe(({ parentId }) => {
-				const currentParentId = this.currentFolder?.id ?? null;
-				if (parentId === currentParentId) this.requestFilesRefresh();
-			});
+		this.deltaSyncService.folderChanged.pipe(takeUntil(this.destroy$)).subscribe(({ parentId }) => {
+			const currentParentId = this.currentFolder?.id ?? null;
+			if (parentId === currentParentId) this.requestFilesRefresh();
+		});
 
 		combineLatest([this.triggerFilesFetch$.pipe(startWith(void 0)), this.ownerId$])
 			.pipe(
@@ -515,9 +520,23 @@ export class FilesPage implements OnDestroy {
 			})
 			.pipe(take(1))
 			.subscribe({
-				next: () => {
+				next: (newFolder) => {
+					const dir = this.sortDirection === 'asc' ? 1 : -1;
+					const field = this.sortField;
+					const updated = [...this.filesSubject.value, newFolder].sort((a, b) => {
+						if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+						const av = a[field] ?? '';
+						const bv = b[field] ?? '';
+						return av < bv ? -dir : av > bv ? dir : 0;
+					});
+
+					this.filesSubject.next(updated);
+					firstValueFrom(this.ownerId$).then((ownerId) => {
+						if (ownerId != null) {
+							this.filesCacheService.invalidateFolder(ownerId, this.currentFolder?.id ?? null);
+						}
+					});
 					this.closeModals();
-					this.refreshCurrentFolderAfterMutation();
 				},
 				error: (err) => console.error('Failed to create folder:', err),
 			});
@@ -657,9 +676,13 @@ export class FilesPage implements OnDestroy {
 
 		forkJoin(
 			ids.map((id) =>
-				this.fileService.deleteFile(id).pipe(
-					catchError((err) => (err?.status === 404 ? of(undefined as void) : throwError(() => err))),
-				),
+				this.fileService
+					.deleteFile(id)
+					.pipe(
+						catchError((err) =>
+							err?.status === 404 ? of(undefined as void) : throwError(() => err),
+						),
+					),
 			),
 		)
 			.pipe(take(1))
