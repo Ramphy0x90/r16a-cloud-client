@@ -1,9 +1,11 @@
-import { ChangeDetectorRef, Component, inject, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	BehaviorSubject,
 	catchError,
 	concat,
+	debounceTime,
+	fromEvent,
 	map,
 	mergeMap,
 	Observable,
@@ -20,6 +22,7 @@ import { File } from '../../types/file';
 import { isImageFile, isVideoFile } from '../../utils/file-utils';
 import { blurhashToDataUrl } from '../../utils/blurhash';
 import { InViewportDirective } from '../../directives/in-viewport.directive';
+import { ScrollSentinelDirective } from '../../directives/scroll-sentinel.directive';
 import {
 	ImagePreviewModal,
 	ImagePreviewModalState,
@@ -33,11 +36,12 @@ interface YearSection {
 	hasMore: boolean;
 	cursor: string | null;
 	loadStarted: boolean;
+	gridHeight: number;
 }
 
 @Component({
 	selector: 'photos-page',
-	imports: [CommonModule, InViewportDirective, ImagePreviewModal],
+	imports: [CommonModule, InViewportDirective, ScrollSentinelDirective, ImagePreviewModal],
 	templateUrl: './photos.html',
 	styleUrl: './photos.css',
 })
@@ -70,10 +74,34 @@ export class PhotosPage implements OnDestroy {
 	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
 	readonly imagePreviewUrls$ = this.imagePreviewUrlsSubject.asObservable();
 	readonly emptyPreviewMap = new Map<string, string>();
-	readonly skeletonItems = Array(15).fill(0);
 
 	yearSections: YearSection[] = [];
 	loading = true;
+
+	private getColumns(viewportWidth: number): number {
+		if (viewportWidth >= 1200) return 6;
+		if (viewportWidth >= 768) return 5;
+		if (viewportWidth >= 480) return 4;
+		return 3;
+	}
+
+	private computeGridHeight(totalCount: number): number {
+		const w = window.innerWidth;
+		const cols = this.getColumns(w);
+		const gap = 2;
+		const itemWidth = (w - gap * (cols - 1)) / cols;
+		const rows = Math.ceil(totalCount / cols);
+		return rows * itemWidth + Math.max(0, rows - 1) * gap;
+	}
+
+	@HostListener('window:resize')
+	onResize(): void {
+		this.yearSections = this.yearSections.map((s) => ({
+			...s,
+			gridHeight: this.computeGridHeight(s.totalCount),
+		}));
+		this.cdr.markForCheck();
+	}
 
 	constructor() {
 		this.imagePreviewLoadQueue$
@@ -126,6 +154,7 @@ export class PhotosPage implements OnDestroy {
 						hasMore: false,
 						cursor: null,
 						loadStarted: false,
+						gridHeight: this.computeGridHeight(y.count),
 					}));
 					this.loading = false;
 					this.cdr.markForCheck();

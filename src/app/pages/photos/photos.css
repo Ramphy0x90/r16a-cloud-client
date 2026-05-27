@@ -124,6 +124,19 @@
 	/* Mobile first: 3 columns — comfortable on any phone */
 	grid-template-columns: repeat(3, 1fr);
 	gap: 2px;
+	/* Prevents layout shifts when batches load: height is pre-allocated from
+	   totalCount so content below never jumps down as more photos fill in. */
+	align-content: start;
+}
+
+.photo-grid--skeleton {
+	display: block;
+	position: relative;
+}
+
+.photo-grid-shimmer {
+	position: absolute;
+	inset: 0;
 }
 
 @media (min-width: 480px) {

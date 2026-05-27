@@ -28,18 +28,14 @@
 
 				<!-- Skeleton while first load is in flight -->
 				@if (section.loading && section.photos.length === 0) {
-					<div class="photo-grid">
-						@for (item of skeletonItems; track $index) {
-							<div class="photo-item">
-								<div class="photo-placeholder shimmer"></div>
-							</div>
-						}
+					<div class="photo-grid photo-grid--skeleton" [style.min-height.px]="section.gridHeight">
+						<div class="photo-grid-shimmer shimmer"></div>
 					</div>
 				}
 
 				<!-- Photos grid -->
 				@if (section.photos.length > 0) {
-					<div class="photo-grid">
+					<div class="photo-grid" [style.min-height.px]="section.gridHeight">
 						@for (photo of section.photos; track photo.id) {
 							<div
 								class="photo-item"
@@ -89,11 +85,11 @@
 						<div class="loading-spinner-small"></div>
 					</div>
 				}
-				@if (section.hasMore && !section.loading) {
+				@if (section.hasMore) {
 					<div
 						class="load-more-sentinel"
-						inViewport
-						(inViewport)="loadMoreForYear(section)"
+						scrollSentinel
+						(scrollSentinel)="loadMoreForYear(section)"
 					></div>
 				}
 
