@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, HostListener, inject, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	BehaviorSubject,
@@ -50,6 +50,7 @@ export class PhotosPage implements OnDestroy {
 	private readonly userService = inject(UserService);
 	private readonly imagePreviewService = inject(ImagePreviewService);
 	private readonly cdr = inject(ChangeDetectorRef);
+	private readonly el = inject(ElementRef);
 	private readonly destroy$ = new Subject<void>();
 
 	private readonly ownerId$: Observable<string> = this.userService.currentUser$.pipe(
@@ -78,18 +79,24 @@ export class PhotosPage implements OnDestroy {
 	yearSections: YearSection[] = [];
 	loading = true;
 
-	private getColumns(viewportWidth: number): number {
-		if (viewportWidth >= 1200) return 6;
-		if (viewportWidth >= 768) return 5;
-		if (viewportWidth >= 480) return 4;
+	private getColumns(): number {
+		// CSS breakpoints are viewport-width media queries, so column count
+		// must be derived from window.innerWidth, not container width.
+		const vw = window.innerWidth;
+		if (vw >= 1200) return 6;
+		if (vw >= 768) return 5;
+		if (vw >= 480) return 4;
 		return 3;
 	}
 
 	private computeGridHeight(totalCount: number): number {
-		const w = window.innerWidth;
-		const cols = this.getColumns(w);
+		const cols = this.getColumns();
+		// Item width uses the real rendered container (accounts for sidebar +
+		// padding automatically). Falls back to viewport only if not yet in DOM.
+		const containerWidth = (this.el.nativeElement as HTMLElement).clientWidth;
+		if (!containerWidth) return 0;
 		const gap = 2;
-		const itemWidth = (w - gap * (cols - 1)) / cols;
+		const itemWidth = (containerWidth - gap * (cols - 1)) / cols;
 		const rows = Math.ceil(totalCount / cols);
 		return rows * itemWidth + Math.max(0, rows - 1) * gap;
 	}
@@ -154,10 +161,13 @@ export class PhotosPage implements OnDestroy {
 						hasMore: false,
 						cursor: null,
 						loadStarted: false,
-						gridHeight: this.computeGridHeight(y.count),
+						gridHeight: 0,
 					}));
 					this.loading = false;
 					this.cdr.markForCheck();
+					// clientWidth is 0 until Angular renders the host element.
+					// One microtask later the layout is committed and we get real dimensions.
+					setTimeout(() => this.onResize());
 				});
 		});
 	}
