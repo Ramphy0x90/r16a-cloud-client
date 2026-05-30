@@ -219,7 +219,7 @@ export class PhotosPage implements OnDestroy {
 	}
 
 	onPhotoVisible(photo: File): void {
-		if (!isImageFile(photo)) return;
+		if (!isImageFile(photo) && !isVideoFile(photo)) return;
 		const cached = this.imagePreviewService.getThumbnailUrl(photo.id);
 		if (cached) {
 			if (!this.imagePreviewUrlsSubject.value.has(photo.id)) {

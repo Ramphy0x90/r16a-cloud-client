@@ -51,6 +51,7 @@ import { UserResponse } from '../../types/user';
 import {
 	extractDownloadFilename,
 	isImageFile,
+	isVideoFile,
 	triggerBrowserDownload,
 } from '../../utils/file-utils';
 import { ListView } from './list-view/list-view';
@@ -702,7 +703,7 @@ export class FilesPage implements OnDestroy {
 	}
 
 	onImageVisible(file: File): void {
-		if (!isImageFile(file)) return;
+		if (!isImageFile(file) && !isVideoFile(file)) return;
 		if (this.imagePreviewService.getThumbnailUrl(file.id)) return;
 		this.imagePreviewLoadQueue$.next(file);
 	}

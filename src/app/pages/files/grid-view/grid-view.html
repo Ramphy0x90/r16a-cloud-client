@@ -14,17 +14,27 @@
 			</div>
 
 			<div class="file-card-media" inViewport (inViewport)="onImageVisible(file)">
-				@if (isImageFile(file) && getImagePreviewUrl(file)) {
+				@if ((isImageFile(file) || isVideoFile(file)) && getImagePreviewUrl(file)) {
 					<img
 						class="file-card-image"
 						[src]="getImagePreviewUrl(file)!"
 						[alt]="file.name"
 					/>
-				} @else if (isImageFile(file) && file.blurHash) {
+					@if (isVideoFile(file)) {
+						<div class="file-card-video-badge">
+							<i class="bi bi-play-circle-fill"></i>
+						</div>
+					}
+				} @else if ((isImageFile(file) || isVideoFile(file)) && file.blurHash) {
 					<div
 						class="file-card-blurhash"
 						[style.background-image]="'url(' + blurhashToDataUrl(file.blurHash) + ')'"
 					></div>
+					@if (isVideoFile(file)) {
+						<div class="file-card-video-badge">
+							<i class="bi bi-play-circle-fill"></i>
+						</div>
+					}
 				} @else {
 					<i
 						class="bi file-card-icon"

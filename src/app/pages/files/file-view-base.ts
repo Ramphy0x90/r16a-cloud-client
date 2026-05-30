@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { File } from '../../types/file';
-import { isImageFile } from '../../utils/file-utils';
+import { isImageFile, isVideoFile } from '../../utils/file-utils';
 
 @Component({ template: '' })
 export abstract class FileViewBase {
@@ -28,6 +28,10 @@ export abstract class FileViewBase {
 
 	isImageFile(file: File): boolean {
 		return isImageFile(file);
+	}
+
+	isVideoFile(file: File): boolean {
+		return isVideoFile(file);
 	}
 
 	getImagePreviewUrl(file: File): string | null {

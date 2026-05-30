@@ -52,12 +52,7 @@
 									inViewport
 									(inViewport)="onPhotoVisible(photo)"
 								>
-									@if (isVideoFile(photo)) {
-										<div class="photo-video-placeholder">
-											<i class="bi bi-play-circle-fill"></i>
-											<span class="photo-video-label">{{ photo.name }}</span>
-										</div>
-									} @else if (previewUrls.get(photo.id)) {
+									@if (previewUrls.get(photo.id)) {
 										<img
 											class="photo-thumb"
 											[src]="previewUrls.get(photo.id)!"
@@ -65,11 +60,26 @@
 											loading="lazy"
 											decoding="async"
 										/>
+										@if (isVideoFile(photo)) {
+											<div class="photo-video-badge">
+												<i class="bi bi-play-circle-fill"></i>
+											</div>
+										}
 									} @else if (photo.blurHash) {
 										<div
 											class="photo-placeholder photo-placeholder--blur"
 											[style.background-image]="'url(' + blurhashToDataUrl(photo.blurHash) + ')'"
 										></div>
+										@if (isVideoFile(photo)) {
+											<div class="photo-video-badge">
+												<i class="bi bi-play-circle-fill"></i>
+											</div>
+										}
+									} @else if (isVideoFile(photo)) {
+										<div class="photo-video-placeholder">
+											<i class="bi bi-play-circle-fill"></i>
+											<span class="photo-video-label">{{ photo.name }}</span>
+										</div>
 									} @else {
 										<div class="photo-placeholder shimmer"></div>
 									}
