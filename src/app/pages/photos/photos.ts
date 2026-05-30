@@ -167,7 +167,15 @@ export class PhotosPage implements OnDestroy {
 					this.cdr.markForCheck();
 					// clientWidth is 0 until Angular renders the host element.
 					// One microtask later the layout is committed and we get real dimensions.
-					setTimeout(() => this.onResize());
+					setTimeout(() => {
+						this.onResize();
+						// All sections start collapsed (header height only), so many stack
+						// within the initial viewport and IntersectionObserver may miss them
+						// all in one burst — especially on mobile where the browser can
+						// throttle IO callbacks. Eagerly start visible sections without
+						// waiting for the observer.
+						this.triggerInitialSections();
+					});
 				});
 		});
 	}
@@ -182,6 +190,32 @@ export class PhotosPage implements OnDestroy {
 		if (section.loadStarted) return;
 		section.loadStarted = true;
 		this.loadPhotosForSection(section);
+	}
+
+	private triggerInitialSections(): void {
+		const container = this.el.nativeElement as HTMLElement;
+		// Walk up to find the actual scroll container (.pages-render-space).
+		// Falls back to window.innerHeight if no scrolling ancestor is found.
+		let scrollAncestor: Element | null = container.parentElement;
+		while (scrollAncestor) {
+			const style = getComputedStyle(scrollAncestor);
+			if (style.overflowY === 'auto' || style.overflowY === 'scroll') break;
+			scrollAncestor = scrollAncestor.parentElement;
+		}
+		const visibleHeight = scrollAncestor
+			? scrollAncestor.clientHeight
+			: window.innerHeight;
+
+		// Compute how many sections fit in the initial unscrolled view.
+		// Each collapsed section is roughly its header height; use a generous
+		// estimate (80px) so we never under-count on large-font or zoomed screens.
+		const headerEstimate = 80;
+		const sectionsInView = Math.max(1, Math.ceil(visibleHeight / headerEstimate));
+
+		this.yearSections
+			.slice(0, sectionsInView)
+			.forEach((s) => this.onYearVisible(s));
+		this.cdr.markForCheck();
 	}
 
 	onPhotoVisible(photo: File): void {

@@ -28,8 +28,8 @@ export class InViewportDirective implements OnInit, OnDestroy {
 			},
 			{
 				root: null,
-				rootMargin: '300px 0px',
-				threshold: 0.1,
+				rootMargin: '400px 0px',
+				threshold: 0,
 			},
 		);
 
