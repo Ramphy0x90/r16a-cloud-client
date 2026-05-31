@@ -7,7 +7,20 @@
 	(drop)="onDrop($event)"
 >
 	<!-- Toolbar -->
-	<files-toolbar></files-toolbar>
+	<files-toolbar [readOnly]="sharedFilter"></files-toolbar>
+
+	<div class="files-filter-tabs">
+		<button
+			class="filter-tab"
+			[class.filter-tab--active]="!sharedFilter"
+			(click)="setSharedFilter(false)"
+		>My files</button>
+		<button
+			class="filter-tab"
+			[class.filter-tab--active]="sharedFilter"
+			(click)="setSharedFilter(true)"
+		>Shared with me</button>
+	</div>
 
 	@if (isDragging) {
 		<div class="drag-drop-overlay" aria-hidden="true">
@@ -65,6 +78,7 @@
 				[selectionMode]="selectionMode"
 				[selectedFileIds]="selectedFileIds"
 				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				[showSharedFrom]="sharedFilter"
 				(fileClick)="onFileClick($event)"
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
@@ -81,6 +95,7 @@
 				[selectionMode]="selectionMode"
 				[selectedFileIds]="selectedFileIds"
 				[imagePreviewUrls]="(imagePreviewUrls$ | async) ?? emptyImagePreviewMap"
+				[showSharedFrom]="sharedFilter"
 				(fileClick)="onFileClick($event)"
 				(fileSelect)="toggleFileSelection($event)"
 				(fileRename)="openRenameModal($event.file, $event.event)"
@@ -89,7 +104,7 @@
 			></list-view>
 		}
 
-		@if (hasMoreFiles || loadingMore) {
+		@if (!sharedFilter && (hasMoreFiles || loadingMore)) {
 			<div class="files-load-more" [attr.aria-busy]="loadingMore">
 				@if (loadingMore) {
 					<p class="files-load-more-status" role="status" aria-live="polite">Loading more…</p>
@@ -103,9 +118,15 @@
 		<div class="files-page-bottom-blur" aria-hidden="true"></div>
 	} @else {
 		<div class="empty-state">
-			<i class="bi bi-cloud"></i>
-			<h3>No files yet</h3>
-			<p>Upload files or create a folder to get started</p>
+			@if (sharedFilter) {
+				<i class="bi bi-people"></i>
+				<h3>Nothing shared with you yet</h3>
+				<p>Files other users share with you will appear here</p>
+			} @else {
+				<i class="bi bi-cloud"></i>
+				<h3>No files yet</h3>
+				<p>Upload files or create a folder to get started</p>
+			}
 		</div>
 	}
 </div>

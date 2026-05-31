@@ -171,6 +171,8 @@ export class FilesPage implements OnDestroy {
 	selectedShareUserIds = new Set<string>();
 	shareSaving = false;
 
+	sharedFilter = false;
+
 	newFolderName = '';
 	renameName = '';
 
@@ -820,7 +822,41 @@ export class FilesPage implements OnDestroy {
 		});
 	}
 
+	setSharedFilter(value: boolean): void {
+		if (this.sharedFilter === value) return;
+		this.sharedFilter = value;
+		if (value) {
+			// Exit subfolder context — shared files are a flat list
+			this.currentFolder = null;
+			this.breadcrumbs = [];
+			this.selectionMode = false;
+			this.selectedFileIds = new Set();
+			this.store.dispatch(setFileToolbarState({ breadcrumbs: [], selectionMode: false, selectedCount: 0 }));
+			this.loadSharedFiles();
+		} else {
+			this.requestFilesRefresh();
+		}
+	}
+
+	private loadSharedFiles(): void {
+		this.loading = true;
+		this.hasMoreFiles = false;
+		this.cdr.markForCheck();
+		this.fileService
+			.getFilesSharedWithMe(this.sortField, this.sortDirection)
+			.pipe(take(1), catchError(() => of(null)))
+			.subscribe((response) => {
+				this.filesSubject.next(response?.content ?? []);
+				this.loading = false;
+				this.cdr.markForCheck();
+			});
+	}
+
 	private requestFilesRefresh(): void {
+		if (this.sharedFilter) {
+			this.loadSharedFiles();
+			return;
+		}
 		this.triggerFilesFetch$.next();
 	}
 

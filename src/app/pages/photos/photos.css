@@ -254,6 +254,19 @@
 	pointer-events: none;
 }
 
+.photo-shared-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	color: white;
+	font-size: 0.7rem;
+	line-height: 1;
+	background: rgba(0, 0, 0, 0.55);
+	border-radius: 999px;
+	padding: 3px 5px;
+	pointer-events: none;
+}
+
 /* ── Video placeholder ────────────────────────────────────────────────── */
 
 .photo-video-placeholder {

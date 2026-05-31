@@ -9,7 +9,7 @@
 		@if (selectionMode()) {
 			<span class="selection-count">{{ selectedCount() }} selected</span>
 
-			@if (selectedCount() === 1) {
+			@if (!readOnly && selectedCount() === 1) {
 				<button class="action-btn" (click)="onShareSelected()" title="Share">
 					<i class="bi bi-share"></i>
 					<span class="btn-label">Share</span>
@@ -27,10 +27,12 @@
 					<span class="btn-label">Download</span>
 				</button>
 
-				<button class="action-btn danger-btn" (click)="onBulkDeleteSelected()" title="Delete">
-					<i class="bi bi-trash"></i>
-					<span class="btn-label">Delete</span>
-				</button>
+				@if (!readOnly) {
+					<button class="action-btn danger-btn" (click)="onBulkDeleteSelected()" title="Delete">
+						<i class="bi bi-trash"></i>
+						<span class="btn-label">Delete</span>
+					</button>
+				}
 			}
 
 			<button class="action-btn" (click)="onCancelSelection()" title="Cancel selection">
@@ -49,15 +51,17 @@
 				(selectionModeChange)="onSelectionModeChange($event)"
 			></file-options>
 
-			<button class="action-btn primary-btn" (click)="onCreateFolder()" title="New folder">
-				<i class="bi bi-folder-plus"></i>
-				<span class="btn-label">New folder</span>
-			</button>
+			@if (!readOnly) {
+				<button class="action-btn primary-btn" (click)="onCreateFolder()" title="New folder">
+					<i class="bi bi-folder-plus"></i>
+					<span class="btn-label">New folder</span>
+				</button>
 
-			<button class="action-btn primary-btn" (click)="onUpload()" title="Upload files">
-				<i class="bi bi-cloud-arrow-up"></i>
-				<span class="btn-label">Upload</span>
-			</button>
+				<button class="action-btn primary-btn" (click)="onUpload()" title="Upload files">
+					<i class="bi bi-cloud-arrow-up"></i>
+					<span class="btn-label">Upload</span>
+				</button>
+			}
 		}
 	</div>
 </div>

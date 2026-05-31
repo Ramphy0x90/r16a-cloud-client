@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, Input } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -37,6 +37,8 @@ import { SortDirection, SortField, ViewMode } from '../../types/file';
 	styleUrl: './files-toolbar.css',
 })
 export class FilesToolbar {
+	@Input() readOnly = false;
+
 	private readonly store = inject(Store);
 
 	readonly breadcrumbs = toSignal(this.store.select(selectToolbarBreadcrumbs), { initialValue: [] });

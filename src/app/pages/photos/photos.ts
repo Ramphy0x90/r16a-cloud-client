@@ -5,6 +5,7 @@ import {
 	catchError,
 	concat,
 	debounceTime,
+	forkJoin,
 	fromEvent,
 	map,
 	mergeMap,
@@ -16,6 +17,7 @@ import {
 	takeUntil,
 } from 'rxjs';
 import { PhotosService } from '../../services/photos.service';
+import { FileService } from '../../services/file.service';
 import { UserService } from '../../services/user.service';
 import { ImagePreviewService } from '../../services/image-preview.service';
 import { File } from '../../types/file';
@@ -47,6 +49,7 @@ interface YearSection {
 })
 export class PhotosPage implements OnDestroy {
 	private readonly photosService = inject(PhotosService);
+	private readonly fileService = inject(FileService);
 	private readonly userService = inject(UserService);
 	private readonly imagePreviewService = inject(ImagePreviewService);
 	private readonly cdr = inject(ChangeDetectorRef);
@@ -77,6 +80,7 @@ export class PhotosPage implements OnDestroy {
 	readonly emptyPreviewMap = new Map<string, string>();
 
 	yearSections: YearSection[] = [];
+	sharedPhotoIds = new Set<string>();
 	loading = true;
 
 	private getColumns(): number {
@@ -149,20 +153,49 @@ export class PhotosPage implements OnDestroy {
 			.subscribe((state) => this.imagePreviewStateSubject.next(state));
 
 		this.ownerId$.pipe(take(1), takeUntil(this.destroy$)).subscribe((ownerId) => {
-			this.photosService
-				.getPhotoYears(ownerId)
-				.pipe(take(1), catchError(() => of([])))
-				.subscribe((years) => {
-					this.yearSections = years.map((y) => ({
-						year: y.year,
-						totalCount: y.count,
-						photos: [],
-						loading: false,
-						hasMore: false,
-						cursor: null,
-						loadStarted: false,
-						gridHeight: 0,
-					}));
+			forkJoin({
+				years: this.photosService.getPhotoYears(ownerId).pipe(catchError(() => of([]))),
+				shared: this.fileService.getFilesSharedWithMe('name', 'asc', 0, 500).pipe(
+					map((r) => r.content.filter((f) => isImageFile(f) || isVideoFile(f))),
+					catchError(() => of([])),
+				),
+			})
+				.pipe(take(1))
+				.subscribe(({ years, shared }) => {
+					// Index shared photos by year derived from takenAt or createdAt
+					const sharedByYear = new Map<number, File[]>();
+					for (const photo of shared) {
+						const dateStr = photo.takenAt ?? photo.createdAt;
+						const year = parseInt(dateStr.substring(0, 4), 10);
+						if (!sharedByYear.has(year)) sharedByYear.set(year, []);
+						sharedByYear.get(year)!.push(photo);
+						this.sharedPhotoIds.add(photo.id);
+					}
+
+					// Build year set from own photos, then add years only in shared
+					const ownYearSet = new Set(years.map((y) => y.year));
+					const allYears = [...new Set([...ownYearSet, ...sharedByYear.keys()])].sort(
+						(a, b) => b - a,
+					);
+
+					this.yearSections = allYears.map((year) => {
+						const ownEntry = years.find((y) => y.year === year);
+						const sharedPhotos = sharedByYear.get(year) ?? [];
+						const ownCount = ownEntry?.count ?? 0;
+						return {
+							year,
+							totalCount: ownCount + sharedPhotos.length,
+							// Pre-populate with shared photos; own photos append lazily
+							photos: sharedPhotos,
+							loading: false,
+							// No own photos for this year → nothing to lazy-load
+							hasMore: false,
+							cursor: null,
+							loadStarted: ownCount === 0,
+							gridHeight: 0,
+						};
+					});
+
 					this.loading = false;
 					this.cdr.markForCheck();
 					// clientWidth is 0 until Angular renders the host element.
@@ -284,7 +317,9 @@ export class PhotosPage implements OnDestroy {
 							this.cdr.markForCheck();
 							return;
 						}
-						section.photos = [...section.photos, ...response.content];
+						// Keep pre-populated shared photos at the end; own photos prepend
+						const sharedPhotos = section.photos.filter((p) => this.sharedPhotoIds.has(p.id));
+						section.photos = [...section.photos.filter((p) => !this.sharedPhotoIds.has(p.id)), ...response.content, ...sharedPhotos];
 						section.hasMore = response.hasMore;
 						section.cursor = response.nextCursor;
 						section.loading = false;

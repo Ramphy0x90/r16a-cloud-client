@@ -14,11 +14,12 @@
 	} @else {
 		@for (section of yearSections; track section.year) {
 			<section class="year-section">
-
 				<!-- Year header + invisible load trigger -->
 				<div class="year-header">
 					<h2 class="year-label">{{ section.year }}</h2>
-					<span class="year-count">{{ section.totalCount }} {{ section.totalCount === 1 ? 'photo' : 'photos' }}</span>
+					<span class="year-count"
+						>{{ section.totalCount }} {{ section.totalCount === 1 ? 'photo' : 'photos' }}</span
+					>
 				</div>
 
 				<!-- Trigger: fires when section scrolls near viewport -->
@@ -47,11 +48,7 @@
 								(keydown.enter)="openPhotoPreview(photo)"
 								(keydown.space)="openPhotoPreview(photo)"
 							>
-								<div
-									class="photo-media"
-									inViewport
-									(inViewport)="onPhotoVisible(photo)"
-								>
+								<div class="photo-media" inViewport (inViewport)="onPhotoVisible(photo)">
 									@if (previewUrls.get(photo.id)) {
 										<img
 											class="photo-thumb"
@@ -63,6 +60,11 @@
 										@if (isVideoFile(photo)) {
 											<div class="photo-video-badge">
 												<i class="bi bi-play-circle-fill"></i>
+											</div>
+										}
+										@if (sharedPhotoIds.has(photo.id)) {
+											<div class="photo-shared-badge" [title]="photo.ownerDisplayName">
+												<i class="bi bi-people-fill"></i>
 											</div>
 										}
 									} @else if (photo.blurHash) {
@@ -102,7 +104,6 @@
 						(scrollSentinel)="loadMoreForYear(section)"
 					></div>
 				}
-
 			</section>
 		}
 
