@@ -1,45 +1,72 @@
-<div class="toolbar">
-	<breadcrumb
-		[items]="breadcrumbs()"
-		(rootClick)="onRootClick()"
-		(itemClick)="onBreadcrumbClick($event)"
-	></breadcrumb>
+<div class="toolbar" [class.toolbar--selecting]="selectionMode()">
 
-	<div class="toolbar-actions">
-		@if (selectionMode()) {
-			<span class="selection-count">{{ selectedCount() }} selected</span>
+	@if (selectionMode()) {
 
-			@if (!readOnly && selectedCount() === 1) {
-				<button class="action-btn" (click)="onShareSelected()" title="Share">
-					<i class="bi bi-share"></i>
-					<span class="btn-label">Share</span>
-				</button>
+		<button class="tbar-btn" (click)="onCancelSelection()" aria-label="Cancel selection">
+			<i class="bi bi-x-lg"></i>
+		</button>
 
-				<button class="action-btn" (click)="onRenameSelected()" title="Rename">
-					<i class="bi bi-pencil"></i>
-					<span class="btn-label">Rename</span>
-				</button>
-			}
+		<span class="selection-count">
+			{{ selectedCount() }} <span class="selection-count-label">selected</span>
+		</span>
 
+		<div class="tbar-actions">
 			@if (selectedCount() > 0) {
-				<button class="action-btn" (click)="onDownloadSelected()" title="Download">
+				<button class="tbar-btn" (click)="onDownloadSelected()" title="Download">
 					<i class="bi bi-download"></i>
-					<span class="btn-label">Download</span>
 				</button>
-
-				@if (!readOnly) {
-					<button class="action-btn danger-btn" (click)="onBulkDeleteSelected()" title="Delete">
-						<i class="bi bi-trash"></i>
-						<span class="btn-label">Delete</span>
-					</button>
-				}
 			}
+			@if (!readOnly && selectedCount() === 1) {
+				<button class="tbar-btn" (click)="onShareSelected()" title="Share">
+					<i class="bi bi-share"></i>
+				</button>
+				<button class="tbar-btn" (click)="onRenameSelected()" title="Rename">
+					<i class="bi bi-pencil"></i>
+				</button>
+			}
+			@if (!readOnly && selectedCount() > 0) {
+				<button class="tbar-btn tbar-btn--danger" (click)="onBulkDeleteSelected()" title="Delete">
+					<i class="bi bi-trash"></i>
+				</button>
+			}
+		</div>
 
-			<button class="action-btn" (click)="onCancelSelection()" title="Cancel selection">
-				<i class="bi bi-x-lg"></i>
-				<span class="btn-label">Cancel</span>
-			</button>
-		} @else {
+	} @else {
+
+		<div class="toolbar-nav">
+			@if (breadcrumbs().length > 0) {
+				<breadcrumb
+					[items]="breadcrumbs()"
+					(rootClick)="onRootClick()"
+					(itemClick)="onBreadcrumbClick($event)"
+				></breadcrumb>
+			} @else {
+				<div class="filter-tabs" role="tablist">
+					<button
+						role="tab"
+						class="filter-tab"
+						[class.filter-tab--active]="!sharedFilter"
+						[attr.aria-selected]="!sharedFilter"
+						(click)="sharedFilterChange.emit(false)"
+					>
+						<i class="bi bi-cloud"></i>
+						<span>My files</span>
+					</button>
+					<button
+						role="tab"
+						class="filter-tab"
+						[class.filter-tab--active]="sharedFilter"
+						[attr.aria-selected]="sharedFilter"
+						(click)="sharedFilterChange.emit(true)"
+					>
+						<i class="bi bi-people"></i>
+						<span>Shared</span>
+					</button>
+				</div>
+			}
+		</div>
+
+		<div class="tbar-actions">
 			<file-options
 				[viewMode]="viewMode()"
 				[sortField]="sortField()"
@@ -52,16 +79,16 @@
 			></file-options>
 
 			@if (!readOnly) {
-				<button class="action-btn primary-btn" (click)="onCreateFolder()" title="New folder">
+				<button class="tbar-btn" (click)="onCreateFolder()" title="New folder">
 					<i class="bi bi-folder-plus"></i>
-					<span class="btn-label">New folder</span>
 				</button>
-
-				<button class="action-btn primary-btn" (click)="onUpload()" title="Upload files">
+				<button class="tbar-btn tbar-btn--primary" (click)="onUpload()" title="Upload">
 					<i class="bi bi-cloud-arrow-up"></i>
-					<span class="btn-label">Upload</span>
+					<span class="tbar-btn-label">Upload</span>
 				</button>
 			}
-		}
-	</div>
+		</div>
+
+	}
+
 </div>

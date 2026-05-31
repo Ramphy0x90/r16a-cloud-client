@@ -7,20 +7,11 @@
 	(drop)="onDrop($event)"
 >
 	<!-- Toolbar -->
-	<files-toolbar [readOnly]="sharedFilter"></files-toolbar>
-
-	<div class="files-filter-tabs">
-		<button
-			class="filter-tab"
-			[class.filter-tab--active]="!sharedFilter"
-			(click)="setSharedFilter(false)"
-		>My files</button>
-		<button
-			class="filter-tab"
-			[class.filter-tab--active]="sharedFilter"
-			(click)="setSharedFilter(true)"
-		>Shared with me</button>
-	</div>
+	<files-toolbar
+		[readOnly]="sharedFilter"
+		[sharedFilter]="sharedFilter"
+		(sharedFilterChange)="setSharedFilter($event)"
+	></files-toolbar>
 
 	@if (isDragging) {
 		<div class="drag-drop-overlay" aria-hidden="true">

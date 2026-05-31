@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, Input } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -38,6 +38,8 @@ import { SortDirection, SortField, ViewMode } from '../../types/file';
 })
 export class FilesToolbar {
 	@Input() readOnly = false;
+	@Input() sharedFilter = false;
+	@Output() sharedFilterChange = new EventEmitter<boolean>();
 
 	private readonly store = inject(Store);
 

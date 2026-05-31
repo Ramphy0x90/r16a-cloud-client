@@ -1,74 +1,156 @@
+/* ── Toolbar shell ─────────────────────────────────────────────────────── */
+
 .toolbar {
 	display: flex;
 	flex-direction: row;
-	justify-content: space-between;
 	align-items: center;
-	gap: var(--space-2);
+	min-height: 48px;
 	background-color: var(--colour-card);
-	padding: var(--space-2) var(--space-3);
 	border-radius: var(--radius);
-	box-shadow: 0px 10px 8px -8px rgba(0, 0, 0, 0.1);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+	gap: 0;
 }
 
-.toolbar-actions {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-}
+/* ── Selection mode — distinct background ──────────────────────────────── */
 
-.action-btn {
-	display: flex;
-	align-items: center;
-	gap: var(--space-1);
-	padding: var(--space-1) var(--space-2);
-	border-radius: var(--radius);
-	background-color: var(--colour-card);
-	color: var(--colour-foreground);
-	border: none;
-	cursor: pointer;
-	font-size: 0.875rem;
-	white-space: nowrap;
-}
-
-.action-btn i {
-	font-size: 1.3rem;
-}
-
-.action-btn:hover {
+.toolbar--selecting {
 	background-color: var(--colour-card-hover);
 }
 
-.action-btn.primary-btn {
-	background-color: var(--colour-primary);
-	color: #fff;
-}
-
-.action-btn.primary-btn:hover {
-	opacity: 0.85;
-}
-
-.btn-label {
-	display: none;
-}
-
-.selection-count {
-	font-size: 0.85rem;
+.toolbar--selecting .selection-count {
+	flex: 1;
+	font-size: 0.875rem;
 	font-weight: 500;
-	opacity: 0.7;
+	padding: 0 var(--space-2);
 	white-space: nowrap;
 }
 
-.action-btn.danger-btn {
-	background-color: var(--colour-alert);
+.selection-count-label {
+	opacity: 0.6;
+	font-weight: 400;
+}
+
+/* ── Nav area (left side) ──────────────────────────────────────────────── */
+
+.toolbar-nav {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: stretch;
+	height: 100%;
+	min-height: 48px;
+}
+
+/* ── Filter tabs ───────────────────────────────────────────────────────── */
+
+.filter-tabs {
+	display: flex;
+	align-items: stretch;
+	height: 100%;
+}
+
+.filter-tab {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: 0 var(--space-3);
+	min-height: 48px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	background: none;
+	color: var(--colour-foreground);
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	opacity: 0.45;
+	transition: opacity 0.15s, border-color 0.15s;
+	white-space: nowrap;
+}
+
+.filter-tab i {
+	font-size: 1.05rem;
+	flex-shrink: 0;
+}
+
+.filter-tab:hover {
+	opacity: 0.7;
+}
+
+.filter-tab--active {
+	opacity: 1;
+	border-bottom-color: var(--colour-primary);
+}
+
+/* ── Actions area (right side) ─────────────────────────────────────────── */
+
+.tbar-actions {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	padding: 0 var(--space-1);
+	gap: 2px;
+}
+
+/* ── Toolbar buttons ───────────────────────────────────────────────────── */
+
+.tbar-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	min-width: 40px;
+	min-height: 40px;
+	padding: 0 var(--space-1);
+	border: none;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--colour-foreground);
+	cursor: pointer;
+	font-size: 0.875rem;
+	font-weight: 500;
+	transition: background 0.12s;
+}
+
+.tbar-btn i {
+	font-size: 1.2rem;
+}
+
+.tbar-btn:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.tbar-btn--primary {
+	background-color: var(--colour-primary);
 	color: #fff;
+	padding: 0 var(--space-2);
 }
 
-.action-btn.danger-btn:hover {
+.tbar-btn--primary:hover {
 	opacity: 0.85;
+	background-color: var(--colour-primary);
 }
 
-@media (min-width: 768px) {
-	.btn-label {
+.tbar-btn--danger {
+	color: var(--colour-alert);
+}
+
+.tbar-btn--danger:hover {
+	background-color: color-mix(in srgb, var(--colour-alert) 12%, transparent);
+}
+
+.tbar-btn-label {
+	display: none;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (min-width: 480px) {
+	.tbar-btn-label {
 		display: inline;
+	}
+
+	.tbar-btn--primary {
+		padding: 0 var(--space-3);
 	}
 }
