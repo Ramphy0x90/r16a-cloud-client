@@ -211,7 +211,7 @@ export class FileService {
 
 	downloadThumbnail(
 		id: string,
-		size: 'small' | 'medium' = 'small',
+		size: 'small' | 'medium' | 'large' = 'small',
 	): Observable<HttpResponse<Blob>> {
 		const params = new HttpParams().set('size', size);
 		return this.http.get(`${this.apiUrl}/${id}/thumbnail`, {

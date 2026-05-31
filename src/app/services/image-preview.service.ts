@@ -66,8 +66,14 @@ export class ImagePreviewService implements OnDestroy {
 		const existing = this.fullPreviewCache.get(file.id);
 		if (existing) return of([file.id, existing]);
 
-		return this.fileService.downloadFile(file.id).pipe(
-			timeout(15_000),
+		// HEIC/HEIF cannot be rendered by browsers natively (except Safari).
+		// Request a server-side converted JPEG at large size instead of the raw file.
+		const isHeic = /\.(heic|heif)$/i.test(file.name);
+		const source$ = isHeic
+			? this.fileService.downloadThumbnail(file.id, 'large').pipe(timeout(30_000))
+			: this.fileService.downloadFile(file.id).pipe(timeout(15_000));
+
+		return source$.pipe(
 			take(1),
 			map((response) => {
 				if (!response.body) return null;
