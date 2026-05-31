@@ -121,7 +121,7 @@ export class FilesPage implements OnDestroy {
 	readonly shareCandidates$: Observable<UserResponse[]> =
 		this.shareCandidatesSubject.asObservable();
 
-	private readonly triggerFilesFetch$ = new Subject<void>();
+	private readonly triggerFilesFetch$ = new Subject<{ silent: boolean }>();
 	private readonly imagePreviewLoadQueue$ = new Subject<File>();
 	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
 	private readonly imagePreviewOpen$ = new Subject<File>();
@@ -217,17 +217,19 @@ export class FilesPage implements OnDestroy {
 		// React to server-side changes detected by delta sync
 		this.deltaSyncService.folderChanged.pipe(takeUntil(this.destroy$)).subscribe(({ parentId }) => {
 			const currentParentId = this.currentFolder?.id ?? null;
-			if (parentId === currentParentId) this.requestFilesRefresh();
+			if (parentId === currentParentId) this.requestFilesRefresh(true);
 		});
 
-		combineLatest([this.triggerFilesFetch$.pipe(startWith(void 0)), this.ownerId$])
+		combineLatest([this.triggerFilesFetch$.pipe(startWith({ silent: false })), this.ownerId$])
 			.pipe(
 				filter(([_, ownerId]) => ownerId != null),
-				switchMap(([_, ownerId]) => {
+				switchMap(([trigger, ownerId]) => {
 					this.fileListGeneration++;
 					const gen = this.fileListGeneration;
-					this.loading = true;
-					this.cdr.markForCheck();
+					if (!trigger.silent) {
+						this.loading = true;
+						this.cdr.markForCheck();
+					}
 					return this.filesCacheService
 						.getFirstPageCached(
 							ownerId,
@@ -852,12 +854,12 @@ export class FilesPage implements OnDestroy {
 			});
 	}
 
-	private requestFilesRefresh(): void {
+	private requestFilesRefresh(silent = false): void {
 		if (this.sharedFilter) {
 			this.loadSharedFiles();
 			return;
 		}
-		this.triggerFilesFetch$.next();
+		this.triggerFilesFetch$.next({ silent });
 	}
 
 	private async refreshCurrentFolderAfterMutation(): Promise<void> {
