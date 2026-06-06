@@ -1,5 +1,5 @@
 <div class="page profile-page">
-	@if (loading) {
+	@if (loading$ | async) {
 		<loading-spinner></loading-spinner>
 	} @else {
 		<section class="profile-card">
@@ -32,9 +32,6 @@
 					<h2>Preferences</h2>
 					<p>Customize your default experience.</p>
 				</div>
-				@if (saving) {
-					<span class="saving-hint" aria-live="polite">Saving…</span>
-				}
 			</div>
 
 			<div class="preferences-grid">

@@ -1,4 +1,6 @@
 .file-options-container {
+	--options-menu-width: 180px;
+
 	position: relative;
 }
 
@@ -28,7 +30,7 @@
 	background-color: var(--colour-card);
 	border-radius: var(--radius);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	min-width: 180px;
+	min-width: var(--options-menu-width);
 	padding: var(--space-1);
 	z-index: 100;
 }

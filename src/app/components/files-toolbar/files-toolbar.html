@@ -1,7 +1,5 @@
 <div class="toolbar" [class.toolbar--selecting]="selectionMode()">
-
 	@if (selectionMode()) {
-
 		<button class="tbar-btn" (click)="onCancelSelection()" aria-label="Cancel selection">
 			<i class="bi bi-x-lg"></i>
 		</button>
@@ -30,9 +28,7 @@
 				</button>
 			}
 		</div>
-
 	} @else {
-
 		<div class="toolbar-nav">
 			@if (breadcrumbs().length > 0) {
 				<breadcrumb
@@ -88,7 +84,5 @@
 				</button>
 			}
 		</div>
-
 	}
-
 </div>

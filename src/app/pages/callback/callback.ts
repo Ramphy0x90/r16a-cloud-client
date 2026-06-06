@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { filter, take } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
+import { ROUTES } from '../../app.routes';
 
 @Component({
 	selector: 'callback-page',
@@ -34,6 +35,6 @@ export class CallbackPage implements OnInit {
 				filter((isAuthenticated) => isAuthenticated),
 				take(1),
 			)
-			.subscribe(() => this.router.navigate(['/dashboard']));
+			.subscribe(() => this.router.navigate([ROUTES.DASHBOARD]));
 	}
 }

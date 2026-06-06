@@ -42,7 +42,7 @@
 .view-all-link {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--space-1);
 	font-size: 0.8rem;
 	opacity: 0.6;
 }
