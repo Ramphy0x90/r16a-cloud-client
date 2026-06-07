@@ -45,6 +45,8 @@ import { YearSection } from '../../types/photo';
 	styleUrl: './photos.css',
 })
 export class PhotosPage implements OnDestroy {
+	private readonly MAX_PARALLEL_THUMBNAIL_FETCH = 6;
+
 	private readonly photosService = inject(PhotosService);
 	private readonly fileService = inject(FileService);
 	private readonly userService = inject(UserService);
@@ -79,8 +81,8 @@ export class PhotosPage implements OnDestroy {
 
 	readonly imagePreviewState$ = this.imagePreviewStateSubject.asObservable();
 
-	private readonly imagePreviewUrlsSubject = new BehaviorSubject<Map<string, string>>(new Map());
-	readonly imagePreviewUrls$ = this.imagePreviewUrlsSubject.asObservable();
+	private readonly imagePreviewUrlsSubject$ = new BehaviorSubject<Map<string, string>>(new Map());
+	readonly imagePreviewUrls$ = this.imagePreviewUrlsSubject$.asObservable();
 	readonly emptyPreviewMap = new Map<string, string>();
 
 	private get columnsCount(): number {
@@ -99,15 +101,17 @@ export class PhotosPage implements OnDestroy {
 	constructor() {
 		this.imagePreviewLoadQueue$
 			.pipe(
-				mergeMap((file) => this.imagePreviewService.ensureThumbnail$(file), 6),
+				mergeMap(
+					(file) => this.imagePreviewService.ensureThumbnail$(file),
+					this.MAX_PARALLEL_THUMBNAIL_FETCH,
+				),
 				takeUntil(this.destroy$),
 			)
 			.subscribe((preview) => {
 				if (!preview) return;
-				const next = new Map(this.imagePreviewUrlsSubject.value);
+				const next = new Map(this.imagePreviewUrlsSubject$.value);
 				next.set(preview[0], preview[1]);
-				this.imagePreviewUrlsSubject.next(next);
-				this.cdr.markForCheck();
+				this.imagePreviewUrlsSubject$.next(next);
 			});
 
 		this.imagePreviewOpen$
@@ -222,11 +226,10 @@ export class PhotosPage implements OnDestroy {
 
 		const cached = this.imagePreviewService.getThumbnailUrl(photo.id);
 		if (cached) {
-			if (!this.imagePreviewUrlsSubject.value.has(photo.id)) {
-				const next = new Map(this.imagePreviewUrlsSubject.value);
+			if (!this.imagePreviewUrlsSubject$.value.has(photo.id)) {
+				const next = new Map(this.imagePreviewUrlsSubject$.value);
 				next.set(photo.id, cached);
-				this.imagePreviewUrlsSubject.next(next);
-				this.cdr.markForCheck();
+				this.imagePreviewUrlsSubject$.next(next);
 			}
 			return;
 		}
