@@ -43,7 +43,6 @@ import { YearSection } from '../../types/photo';
 })
 export class PhotosPage implements OnDestroy {
 	private readonly MAX_PARALLEL_THUMBNAIL_FETCH = 6;
-	private readonly MAX_THUMBNAIL_QUEUE_SIZE = 60;
 
 	private pendingThumbnails: File[] = [];
 	private activeFetches = 0;
@@ -259,12 +258,6 @@ export class PhotosPage implements OnDestroy {
 	private enqueueThumbnail(file: File): void {
 		if (this.pendingThumbnails.some((f) => f.id === file.id)) return;
 		this.pendingThumbnails.unshift(file);
-		// Drop the oldest entries (tail) once the cap is reached. Since new
-		// items are always inserted at the front, the tail is photos the user
-		// scrolled past and no longer needs.
-		if (this.pendingThumbnails.length > this.MAX_THUMBNAIL_QUEUE_SIZE) {
-			this.pendingThumbnails.length = this.MAX_THUMBNAIL_QUEUE_SIZE;
-		}
 		this.drainThumbnailQueue();
 	}
 
