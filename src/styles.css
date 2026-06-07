@@ -6,6 +6,9 @@
 
 	--radius: 8px;
 
+	--navbar-width-md: 250px;
+	--navbar-width-lg: 300px;
+
 	--file-icon-size: clamp(3.5rem, 3.8vw, 4rem);
 	--file-min-cell-size: 120px;
 	--file-height: 120px;

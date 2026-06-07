@@ -53,7 +53,7 @@
 	}
 
 	.nav-bar-render-space {
-		width: 300px;
+		width: var(--navbar-width-md);
 		padding: 0;
 	}
 }
@@ -61,7 +61,7 @@
 /* Large devices (desktops, 992px and up) */
 @media (min-width: 992px) {
 	.nav-bar-render-space {
-		width: 350px;
+		width: var(--navbar-width-lg);
 	}
 }
 
