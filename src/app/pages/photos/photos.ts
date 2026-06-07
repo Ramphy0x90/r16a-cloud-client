@@ -11,11 +11,8 @@ import {
 	BehaviorSubject,
 	catchError,
 	concat,
-	debounceTime,
 	forkJoin,
-	fromEvent,
 	map,
-	mergeMap,
 	Observable,
 	of,
 	Subject,
@@ -46,6 +43,10 @@ import { YearSection } from '../../types/photo';
 })
 export class PhotosPage implements OnDestroy {
 	private readonly MAX_PARALLEL_THUMBNAIL_FETCH = 6;
+	private readonly MAX_THUMBNAIL_QUEUE_SIZE = 60;
+
+	private pendingThumbnails: File[] = [];
+	private activeFetches = 0;
 
 	private readonly photosService = inject(PhotosService);
 	private readonly fileService = inject(FileService);
@@ -66,7 +67,6 @@ export class PhotosPage implements OnDestroy {
 	 */
 	readonly loading$: BehaviorSubject<boolean> = new BehaviorSubject(true);
 
-	private readonly imagePreviewLoadQueue$ = new Subject<File>();
 	private readonly imagePreviewOpen$ = new Subject<File>();
 	private readonly imagePreviewClose$ = new Subject<void>();
 	private readonly imagePreviewStateSubject = new BehaviorSubject<ImagePreviewModalState>({
@@ -99,21 +99,6 @@ export class PhotosPage implements OnDestroy {
 	sharedPhotoIds = new Set<string>();
 
 	constructor() {
-		this.imagePreviewLoadQueue$
-			.pipe(
-				mergeMap(
-					(file) => this.imagePreviewService.ensureThumbnail$(file),
-					this.MAX_PARALLEL_THUMBNAIL_FETCH,
-				),
-				takeUntil(this.destroy$),
-			)
-			.subscribe((preview) => {
-				if (!preview) return;
-				const next = new Map(this.imagePreviewUrlsSubject$.value);
-				next.set(preview[0], preview[1]);
-				this.imagePreviewUrlsSubject$.next(next);
-			});
-
 		this.imagePreviewOpen$
 			.pipe(
 				switchMap((file) => {
@@ -233,7 +218,7 @@ export class PhotosPage implements OnDestroy {
 			}
 			return;
 		}
-		this.imagePreviewLoadQueue$.next(photo);
+		this.enqueueThumbnail(photo);
 	}
 
 	openPhotoPreview(photo: File): void {
@@ -269,6 +254,41 @@ export class PhotosPage implements OnDestroy {
 
 	blurhashToDataUrl(hash: string): string {
 		return blurhashToDataUrl(hash);
+	}
+
+	private enqueueThumbnail(file: File): void {
+		if (this.pendingThumbnails.some((f) => f.id === file.id)) return;
+		this.pendingThumbnails.unshift(file);
+		// Drop the oldest entries (tail) once the cap is reached. Since new
+		// items are always inserted at the front, the tail is photos the user
+		// scrolled past and no longer needs.
+		if (this.pendingThumbnails.length > this.MAX_THUMBNAIL_QUEUE_SIZE) {
+			this.pendingThumbnails.length = this.MAX_THUMBNAIL_QUEUE_SIZE;
+		}
+		this.drainThumbnailQueue();
+	}
+
+	private drainThumbnailQueue(): void {
+		while (
+			this.activeFetches < this.MAX_PARALLEL_THUMBNAIL_FETCH &&
+			this.pendingThumbnails.length
+		) {
+			const file = this.pendingThumbnails.shift()!;
+			this.activeFetches++;
+
+			this.imagePreviewService
+				.ensureThumbnail$(file)
+				.pipe(take(1), takeUntil(this.destroy$))
+				.subscribe((preview) => {
+					this.activeFetches--;
+					if (preview) {
+						const next = new Map(this.imagePreviewUrlsSubject$.value);
+						next.set(preview[0], preview[1]);
+						this.imagePreviewUrlsSubject$.next(next);
+					}
+					this.drainThumbnailQueue();
+				});
+		}
 	}
 
 	private triggerInitialSections(): void {
