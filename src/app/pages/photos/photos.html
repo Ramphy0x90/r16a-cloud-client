@@ -1,7 +1,7 @@
 @let previewUrls = (imagePreviewUrls$ | async) ?? emptyPreviewMap;
 
 <div class="page photos-page">
-	@if (loading) {
+	@if (loading$ | async) {
 		<div class="photos-loading">
 			<div class="loading-spinner"></div>
 		</div>
@@ -17,18 +17,18 @@
 				<!-- Year header + invisible load trigger -->
 				<div class="year-header">
 					<h2 class="year-label">{{ section.year }}</h2>
-					<span class="year-count"
-						>{{ section.totalCount }} {{ section.totalCount === 1 ? 'photo' : 'photos' }}</span
-					>
+					<span class="year-count">
+						{{ section.totalCount }} {{ section.totalCount === 1 ? 'photo' : 'photos' }}
+					</span>
 				</div>
 
 				<!-- Trigger: fires when section scrolls near viewport -->
-				@if (!section.loadStarted) {
+				@if (!(section.loadStarted$ | async)) {
 					<div class="year-load-trigger" inViewport (inViewport)="onYearVisible(section)"></div>
 				}
 
 				<!-- Skeleton while first load is in flight -->
-				@if (section.loading && section.photos.length === 0) {
+				@if ((section.loading$ | async) && section.photos.length === 0) {
 					<div class="photo-grid photo-grid--skeleton" [style.min-height.px]="section.gridHeight">
 						<div class="photo-grid-shimmer shimmer"></div>
 					</div>
@@ -40,11 +40,11 @@
 						@for (photo of section.photos; track photo.id) {
 							<div
 								class="photo-item"
-								(click)="openPhotoPreview(photo)"
-								[class.photo-item--video]="isVideoFile(photo)"
-								[attr.aria-label]="photo.name"
 								role="button"
 								tabindex="0"
+								[class.photo-item--video]="isVideoFile(photo)"
+								[attr.aria-label]="photo.name"
+								(click)="openPhotoPreview(photo)"
 								(keydown.enter)="openPhotoPreview(photo)"
 								(keydown.space)="openPhotoPreview(photo)"
 							>
@@ -92,11 +92,12 @@
 				}
 
 				<!-- Load more per year -->
-				@if (section.loading && section.photos.length > 0) {
+				@if ((section.loading$ | async) && section.photos.length > 0) {
 					<div class="year-loading-more" role="status" aria-live="polite">
 						<div class="loading-spinner-small"></div>
 					</div>
 				}
+
 				@if (section.hasMore) {
 					<div
 						class="load-more-sentinel"

@@ -1,4 +1,11 @@
-import { ChangeDetectorRef, Component, ElementRef, HostListener, inject, OnDestroy } from '@angular/core';
+import {
+	ChangeDetectorRef,
+	Component,
+	ElementRef,
+	HostListener,
+	inject,
+	OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	BehaviorSubject,
@@ -29,17 +36,7 @@ import {
 	ImagePreviewModal,
 	ImagePreviewModalState,
 } from '../files/image-preview-modal/image-preview-modal';
-
-interface YearSection {
-	year: number;
-	totalCount: number;
-	photos: File[];
-	loading: boolean;
-	hasMore: boolean;
-	cursor: string | null;
-	loadStarted: boolean;
-	gridHeight: number;
-}
+import { YearSection } from '../../types/photo';
 
 @Component({
 	selector: 'photos-page',
@@ -60,6 +57,13 @@ export class PhotosPage implements OnDestroy {
 		map((user) => user.id),
 	);
 
+	/**
+	 * Used for the first loading of the photos based on current
+	 * user, this after this loading the years, structure etc is
+	 * available to start rendering stuff.
+	 */
+	readonly loading$: BehaviorSubject<boolean> = new BehaviorSubject(true);
+
 	private readonly imagePreviewLoadQueue$ = new Subject<File>();
 	private readonly imagePreviewOpen$ = new Subject<File>();
 	private readonly imagePreviewClose$ = new Subject<void>();
@@ -79,11 +83,7 @@ export class PhotosPage implements OnDestroy {
 	readonly imagePreviewUrls$ = this.imagePreviewUrlsSubject.asObservable();
 	readonly emptyPreviewMap = new Map<string, string>();
 
-	yearSections: YearSection[] = [];
-	sharedPhotoIds = new Set<string>();
-	loading = true;
-
-	private getColumns(): number {
+	private get columnsCount(): number {
 		// CSS breakpoints are viewport-width media queries, so column count
 		// must be derived from window.innerWidth, not container width.
 		const vw = window.innerWidth;
@@ -93,26 +93,8 @@ export class PhotosPage implements OnDestroy {
 		return 3;
 	}
 
-	private computeGridHeight(totalCount: number): number {
-		const cols = this.getColumns();
-		// Item width uses the real rendered container (accounts for sidebar +
-		// padding automatically). Falls back to viewport only if not yet in DOM.
-		const containerWidth = (this.el.nativeElement as HTMLElement).clientWidth;
-		if (!containerWidth) return 0;
-		const gap = 2;
-		const itemWidth = (containerWidth - gap * (cols - 1)) / cols;
-		const rows = Math.ceil(totalCount / cols);
-		return rows * itemWidth + Math.max(0, rows - 1) * gap;
-	}
-
-	@HostListener('window:resize')
-	onResize(): void {
-		this.yearSections = this.yearSections.map((s) => ({
-			...s,
-			gridHeight: this.computeGridHeight(s.totalCount),
-		}));
-		this.cdr.markForCheck();
-	}
+	yearSections: YearSection[] = [];
+	sharedPhotoIds = new Set<string>();
 
 	constructor() {
 		this.imagePreviewLoadQueue$
@@ -187,17 +169,17 @@ export class PhotosPage implements OnDestroy {
 							totalCount: ownCount + sharedPhotos.length,
 							// Pre-populate with shared photos; own photos append lazily
 							photos: sharedPhotos,
-							loading: false,
 							// No own photos for this year → nothing to lazy-load
 							hasMore: false,
 							cursor: null,
-							loadStarted: ownCount === 0,
 							gridHeight: 0,
+							loadStarted$: new BehaviorSubject(ownCount === 0),
+							loading$: new BehaviorSubject(false),
 						};
 					});
 
-					this.loading = false;
-					this.cdr.markForCheck();
+					this.loading$.next(false);
+
 					// clientWidth is 0 until Angular renders the host element.
 					// One microtask later the layout is committed and we get real dimensions.
 					setTimeout(() => {
@@ -219,40 +201,25 @@ export class PhotosPage implements OnDestroy {
 		this.destroy$.complete();
 	}
 
-	onYearVisible(section: YearSection): void {
-		if (section.loadStarted) return;
-		section.loadStarted = true;
-		this.loadPhotosForSection(section);
-	}
-
-	private triggerInitialSections(): void {
-		const container = this.el.nativeElement as HTMLElement;
-		// Walk up to find the actual scroll container (.pages-render-space).
-		// Falls back to window.innerHeight if no scrolling ancestor is found.
-		let scrollAncestor: Element | null = container.parentElement;
-		while (scrollAncestor) {
-			const style = getComputedStyle(scrollAncestor);
-			if (style.overflowY === 'auto' || style.overflowY === 'scroll') break;
-			scrollAncestor = scrollAncestor.parentElement;
-		}
-		const visibleHeight = scrollAncestor
-			? scrollAncestor.clientHeight
-			: window.innerHeight;
-
-		// Compute how many sections fit in the initial unscrolled view.
-		// Each collapsed section is roughly its header height; use a generous
-		// estimate (80px) so we never under-count on large-font or zoomed screens.
-		const headerEstimate = 80;
-		const sectionsInView = Math.max(1, Math.ceil(visibleHeight / headerEstimate));
-
-		this.yearSections
-			.slice(0, sectionsInView)
-			.forEach((s) => this.onYearVisible(s));
+	@HostListener('window:resize')
+	onResize(): void {
+		this.yearSections = this.yearSections.map((s) => ({
+			...s,
+			gridHeight: this.computeGridHeight(s.totalCount),
+		}));
 		this.cdr.markForCheck();
 	}
 
+	onYearVisible(section: YearSection): void {
+		if (section.loadStarted$.getValue()) return;
+		section.loadStarted$.next(true);
+		this.loadPhotosForSection(section);
+	}
+
 	onPhotoVisible(photo: File): void {
+		// For now, only show thumbnail for photos and videos
 		if (!isImageFile(photo) && !isVideoFile(photo)) return;
+
 		const cached = this.imagePreviewService.getThumbnailUrl(photo.id);
 		if (cached) {
 			if (!this.imagePreviewUrlsSubject.value.has(photo.id)) {
@@ -272,7 +239,7 @@ export class PhotosPage implements OnDestroy {
 	}
 
 	loadMoreForYear(section: YearSection): void {
-		if (!section.hasMore || section.loading) return;
+		if (!section.hasMore || section.loading$.getValue()) return;
 		this.loadPhotosForSection(section);
 	}
 
@@ -301,30 +268,67 @@ export class PhotosPage implements OnDestroy {
 		return blurhashToDataUrl(hash);
 	}
 
-	private loadPhotosForSection(section: YearSection): void {
-		section.loading = true;
-		this.cdr.markForCheck();
+	private triggerInitialSections(): void {
+		const container = this.el.nativeElement as HTMLElement;
+		// Walk up to find the actual scroll container (.pages-render-space).
+		// Falls back to window.innerHeight if no scrolling ancestor is found.
+		let scrollAncestor: Element | null = container.parentElement;
+		while (scrollAncestor) {
+			const style = getComputedStyle(scrollAncestor);
+			if (style.overflowY === 'auto' || style.overflowY === 'scroll') break;
+			scrollAncestor = scrollAncestor.parentElement;
+		}
+		const visibleHeight = scrollAncestor ? scrollAncestor.clientHeight : window.innerHeight;
 
-		this.ownerId$
-			.pipe(take(1))
-			.subscribe((ownerId) => {
-				this.photosService
-					.getPhotos(ownerId, section.year, section.cursor)
-					.pipe(take(1), catchError(() => of(null)))
-					.subscribe((response) => {
-						if (!response) {
-							section.loading = false;
-							this.cdr.markForCheck();
-							return;
-						}
-						// Keep pre-populated shared photos at the end; own photos prepend
-						const sharedPhotos = section.photos.filter((p) => this.sharedPhotoIds.has(p.id));
-						section.photos = [...section.photos.filter((p) => !this.sharedPhotoIds.has(p.id)), ...response.content, ...sharedPhotos];
-						section.hasMore = response.hasMore;
-						section.cursor = response.nextCursor;
-						section.loading = false;
-						this.cdr.markForCheck();
-					});
-			});
+		// Compute how many sections fit in the initial unscrolled view.
+		// Each collapsed section is roughly its header height; use a generous
+		// estimate (80px) so we never under-count on large-font or zoomed screens.
+		const headerEstimate = 80;
+		const sectionsInView = Math.max(1, Math.ceil(visibleHeight / headerEstimate));
+
+		this.yearSections.slice(0, sectionsInView).forEach((s) => this.onYearVisible(s));
+		this.cdr.markForCheck();
+	}
+
+	private computeGridHeight(totalCount: number): number {
+		const cols = this.columnsCount;
+		// Item width uses the real rendered container (accounts for sidebar +
+		// padding automatically). Falls back to viewport only if not yet in DOM.
+		const containerWidth = (this.el.nativeElement as HTMLElement).clientWidth;
+		if (!containerWidth) return 0;
+		const gap = 2;
+		const itemWidth = (containerWidth - gap * (cols - 1)) / cols;
+		const rows = Math.ceil(totalCount / cols);
+		return rows * itemWidth + Math.max(0, rows - 1) * gap;
+	}
+
+	private loadPhotosForSection(section: YearSection): void {
+		section.loading$.next(true);
+
+		this.ownerId$.pipe(take(1)).subscribe((ownerId) => {
+			this.photosService
+				.getPhotos(ownerId, section.year, section.cursor)
+				.pipe(
+					take(1),
+					catchError(() => of(null)),
+				)
+				.subscribe((response) => {
+					if (!response) {
+						section.loading$.next(false);
+						return;
+					}
+
+					// Keep pre-populated shared photos at the end; own photos prepend
+					const sharedPhotos = section.photos.filter((p) => this.sharedPhotoIds.has(p.id));
+					section.photos = [
+						...section.photos.filter((p) => !this.sharedPhotoIds.has(p.id)),
+						...response.content,
+						...sharedPhotos,
+					];
+					section.hasMore = response.hasMore;
+					section.cursor = response.nextCursor;
+					section.loading$.next(false);
+				});
+		});
 	}
 }
