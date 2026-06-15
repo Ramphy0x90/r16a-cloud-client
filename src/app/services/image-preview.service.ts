@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { catchError, map, Observable, of, shareReplay, take, timeout } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, take, timeout } from 'rxjs';
 import { File } from '../types/file';
 import { FileService } from './file.service';
 
@@ -50,14 +50,11 @@ export class ImagePreviewService implements OnDestroy {
 				console.error('Failed to load image thumbnail:', err);
 				return of(null);
 			}),
-			shareReplay({ bufferSize: 1, refCount: false }),
+			finalize(() => this.thumbnailInFlight.delete(file.id)),
+			shareReplay({ bufferSize: 1, refCount: true }),
 		);
 
 		this.thumbnailInFlight.set(file.id, request$);
-		request$.pipe(take(1)).subscribe({
-			next: () => this.thumbnailInFlight.delete(file.id),
-			error: () => this.thumbnailInFlight.delete(file.id),
-		});
 
 		return request$;
 	}

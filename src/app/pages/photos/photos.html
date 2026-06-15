@@ -48,7 +48,7 @@
 								(keydown.enter)="openPhotoPreview(photo)"
 								(keydown.space)="openPhotoPreview(photo)"
 							>
-								<div class="photo-media" inViewport (inViewport)="onPhotoVisible(photo)">
+								<div class="photo-media" inViewport (inViewport)="onPhotoVisible(photo)" (outViewport)="onPhotoHidden(photo)">
 									@if (previewUrls.get(photo.id)) {
 										<img
 											class="photo-thumb"

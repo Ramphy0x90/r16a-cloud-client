@@ -16,6 +16,7 @@ import {
 	Observable,
 	of,
 	Subject,
+	Subscription,
 	switchMap,
 	take,
 	takeUntil,
@@ -46,6 +47,8 @@ export class PhotosPage implements OnDestroy {
 
 	private pendingThumbnails: File[] = [];
 	private activeFetches = 0;
+	private readonly visiblePhotoIds = new Set<string>();
+	private readonly activeFetchSubs = new Map<string, Subscription>();
 
 	private readonly photosService = inject(PhotosService);
 	private readonly fileService = inject(FileService);
@@ -208,6 +211,8 @@ export class PhotosPage implements OnDestroy {
 		// For now, only show thumbnail for photos and videos
 		if (!isImageFile(photo) && !isVideoFile(photo)) return;
 
+		this.visiblePhotoIds.add(photo.id);
+
 		const cached = this.imagePreviewService.getThumbnailUrl(photo.id);
 		if (cached) {
 			if (!this.imagePreviewUrlsSubject$.value.has(photo.id)) {
@@ -218,6 +223,18 @@ export class PhotosPage implements OnDestroy {
 			return;
 		}
 		this.enqueueThumbnail(photo);
+	}
+
+	onPhotoHidden(photo: File): void {
+		this.visiblePhotoIds.delete(photo.id);
+
+		const sub = this.activeFetchSubs.get(photo.id);
+		if (sub) {
+			sub.unsubscribe();
+			this.activeFetchSubs.delete(photo.id);
+			this.activeFetches--;
+			this.drainThumbnailQueue();
+		}
 	}
 
 	openPhotoPreview(photo: File): void {
@@ -267,13 +284,18 @@ export class PhotosPage implements OnDestroy {
 			this.pendingThumbnails.length
 		) {
 			const file = this.pendingThumbnails.shift()!;
+
+			// Photo scrolled away before its turn — drop it, try next
+			if (!this.visiblePhotoIds.has(file.id)) continue;
+
 			this.activeFetches++;
 
-			this.imagePreviewService
+			const sub = this.imagePreviewService
 				.ensureThumbnail$(file)
 				.pipe(take(1), takeUntil(this.destroy$))
 				.subscribe((preview) => {
 					this.activeFetches--;
+					this.activeFetchSubs.delete(file.id);
 					if (preview) {
 						const next = new Map(this.imagePreviewUrlsSubject$.value);
 						next.set(preview[0], preview[1]);
@@ -281,6 +303,8 @@ export class PhotosPage implements OnDestroy {
 					}
 					this.drainThumbnailQueue();
 				});
+
+			this.activeFetchSubs.set(file.id, sub);
 		}
 	}
 
