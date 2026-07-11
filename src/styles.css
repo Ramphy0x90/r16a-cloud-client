@@ -8,6 +8,7 @@
 
 	--navbar-width-md: 250px;
 	--navbar-width-lg: 300px;
+	--navbar-width-mobile: 70vw;
 
 	--file-icon-size: clamp(3.5rem, 3.8vw, 4rem);
 	--file-min-cell-size: 120px;

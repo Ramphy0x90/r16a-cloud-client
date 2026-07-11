@@ -1,11 +1,13 @@
 <header class="header-container">
 	<div class="actions-container">
 		@if (isAuthenticated$ | async) {
-			<div class="action">
-				<button class="profile-button" (click)="toProfile()">
-					{{ userInitials$ | async }}
-				</button>
-			</div>
+			<button class="menu-button" (click)="menuToggle.emit()" aria-label="Open menu">
+				<i class="bi bi-list"></i>
+			</button>
+
+			<button class="profile-button" (click)="toProfile()">
+				{{ userInitials$ | async }}
+			</button>
 		}
 	</div>
 </header>

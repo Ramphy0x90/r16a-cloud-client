@@ -1,10 +1,12 @@
-<nav class="nav-bar-container">
+<div class="drawer-backdrop" [class.open]="isOpen()" (click)="close.emit()"></div>
+
+<nav class="nav-bar-container" [class.open]="isOpen()">
 	<div class="identity-container">
 		<identity-logo></identity-logo>
 	</div>
 
 	@for (option of navOptions; track option.path) {
-		<a [routerLink]="option.path" [routerLinkActive]="'active'" class="nav-option">
+		<a [routerLink]="option.path" [routerLinkActive]="'active'" class="nav-option" (click)="close.emit()">
 			<div class="nav-option-icon">
 				<i class="bi" [ngClass]="option.icon"></i>
 			</div>

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { map, Observable } from 'rxjs';
@@ -15,6 +15,8 @@ import { ROUTES } from '../../app.routes';
 export class Header {
 	private readonly authService = inject(AuthService);
 	private readonly router = inject(Router);
+
+	readonly menuToggle = output<void>();
 
 	readonly isAuthenticated$: Observable<boolean> = this.authService.isAuthenticated$;
 	readonly userData$: Observable<Record<string, any>> = this.authService.userData$;

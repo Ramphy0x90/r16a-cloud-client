@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { NavBarItem } from '../../types/nav-bar-item';
 import { NAV_BAR_ROUTES } from '../../app.routes';
 import { CommonModule } from '@angular/common';
@@ -12,5 +12,8 @@ import { IdentityLogo } from '../identity-logo/identity-logo';
 	styleUrl: './nav-bar.css',
 })
 export class NavBar {
+	readonly isOpen = input<boolean>(false);
+	readonly close = output<void>();
+
 	navOptions: readonly NavBarItem[] = NAV_BAR_ROUTES;
 }

@@ -1,14 +1,15 @@
 <div class="root-container" [class.bg]="!(isAuthenticated$ | async)">
 	<div class="pages-render-space">
 		@if (isAuthenticated$ | async) {
-			<app-header></app-header>
+			<app-header (menuToggle)="menuOpen.set(!menuOpen())"></app-header>
 		}
+
 		<router-outlet />
 	</div>
 
 	@if (isAuthenticated$ | async) {
 		<div class="nav-bar-render-space">
-			<nav-bar></nav-bar>
+			<nav-bar [isOpen]="menuOpen()" (close)="menuOpen.set(false)"></nav-bar>
 		</div>
 	}
 </div>
