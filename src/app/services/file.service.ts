@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
-import { Observable, concatMap, from, last, map, switchMap, tap } from 'rxjs';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { Observable, concatMap, firstValueFrom, from, last, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
@@ -14,7 +15,7 @@ import {
 	UpdateFileRequest,
 } from '../types/file';
 
-export const CHUNK_UPLOAD_THRESHOLD_BYTES = 0;
+export const CHUNK_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
 
 export interface ChunkUploadInitResponse {
 	uploadId: string;
@@ -24,6 +25,7 @@ export interface ChunkUploadInitResponse {
 @Injectable({ providedIn: 'root' })
 export class FileService {
 	private readonly http = inject(HttpClient);
+	private readonly oidc = inject(OidcSecurityService);
 	private readonly apiUrl = `${environment.apiUrl}/fs`;
 
 	getFiles(
@@ -83,7 +85,7 @@ export class FileService {
 		file: globalThis.File,
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
-		if (file.size >= CHUNK_UPLOAD_THRESHOLD_BYTES) {
+		if (file.size > CHUNK_UPLOAD_THRESHOLD_BYTES) {
 			return this.uploadFileChunked(ownerId, parentId, file, onProgress);
 		}
 		return this.uploadFileMultipart(ownerId, parentId, file, onProgress);
@@ -103,9 +105,25 @@ export class FileService {
 			params = params.set('parentId', parentId.toString());
 		}
 
-		return this.http
-			.post<File>(`${this.apiUrl}/upload`, formData, { params })
-			.pipe(tap(() => onProgress?.(file.size, file.size)));
+		return from(this.uploadFileMultipartViaFetch(params, formData)).pipe(
+			tap(() => onProgress?.(file.size, file.size)),
+		);
+	}
+
+	private async uploadFileMultipartViaFetch(params: HttpParams, formData: FormData): Promise<File> {
+		const token = await firstValueFrom(this.oidc.getAccessToken());
+		const response = await fetch(`${this.apiUrl}/upload?${params.toString()}`, {
+			method: 'POST',
+			headers: { Authorization: `Bearer ${token}` },
+			body: formData,
+		});
+
+		if (!response.ok) {
+			const text = await response.text().catch(() => '');
+			throw new Error(text || `Upload failed with status ${response.status}`);
+		}
+
+		return response.json() as Promise<File>;
 	}
 
 	private uploadFileChunked(
@@ -161,13 +179,31 @@ export class FileService {
 	}
 
 	private putChunk(uploadId: string, blob: Blob): Observable<void> {
-		return this.http
-			.put(`${this.apiUrl}/upload/${uploadId}/part`, blob, {
-				headers: { 'Content-Type': 'application/octet-stream' },
-				observe: 'response',
-				responseType: 'blob',
-			})
-			.pipe(map(() => void 0));
+		return from(this.putChunkViaFetch(uploadId, blob));
+	}
+
+	/**
+	 * Uses the native fetch API instead of HttpClient/XMLHttpRequest. In production
+	 * (never reproduces against the local backend), the part upload otherwise arrives
+	 * at the server with zero bytes despite a correct Content-Length on iOS Safari,
+	 * Chrome and Brave (all WebKit) - switching the transport is a direct test of
+	 * whether that's specific to the XHR body-upload path.
+	 */
+	private async putChunkViaFetch(uploadId: string, blob: Blob): Promise<void> {
+		const token = await firstValueFrom(this.oidc.getAccessToken());
+		const response = await fetch(`${this.apiUrl}/upload/${uploadId}/part`, {
+			method: 'PUT',
+			headers: {
+				Authorization: `Bearer ${token}`,
+				'Content-Type': 'application/octet-stream',
+			},
+			body: blob,
+		});
+
+		if (!response.ok) {
+			const text = await response.text().catch(() => '');
+			throw new Error(text || `Upload failed with status ${response.status}`);
+		}
 	}
 
 	private completeChunkedUpload(uploadId: string): Observable<File> {
