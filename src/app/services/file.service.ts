@@ -103,14 +103,16 @@ export class FileService {
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
 		const formData = new FormData();
-		formData.append('ownerId', ownerId.toString());
-		if (parentId !== null) {
-			formData.append('parentId', parentId.toString());
-		}
 		formData.append('file', file);
+
+		let params = new HttpParams().set('ownerId', ownerId.toString());
+		if (parentId !== null) {
+			params = params.set('parentId', parentId.toString());
+		}
 
 		const req = new HttpRequest('POST', `${this.apiUrl}/upload`, formData, {
 			reportProgress: true,
+			params,
 		});
 
 		return this.http.request<File>(req).pipe(
