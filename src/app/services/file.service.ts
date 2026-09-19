@@ -14,8 +14,7 @@ import {
 	UpdateFileRequest,
 } from '../types/file';
 
-/** Files larger than this use chunked upload (init / part / complete). */
-export const CHUNK_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
+export const CHUNK_UPLOAD_THRESHOLD_BYTES = 0;
 
 export interface ChunkUploadInitResponse {
 	uploadId: string;
@@ -84,7 +83,7 @@ export class FileService {
 		file: globalThis.File,
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
-		if (file.size > CHUNK_UPLOAD_THRESHOLD_BYTES) {
+		if (file.size >= CHUNK_UPLOAD_THRESHOLD_BYTES) {
 			return this.uploadFileChunked(ownerId, parentId, file, onProgress);
 		}
 		return this.uploadFileMultipart(ownerId, parentId, file, onProgress);
