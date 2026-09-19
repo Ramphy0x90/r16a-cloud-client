@@ -1,6 +1,6 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
 import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor, OidcSecurityService, provideAuth } from 'angular-auth-oidc-client';
 import { firstValueFrom, take } from 'rxjs';
 
@@ -20,9 +20,7 @@ export const appConfig: ApplicationConfig = {
 			const oidc = inject(OidcSecurityService);
 			return firstValueFrom(oidc.checkAuth().pipe(take(1)));
 		}),
-		// TEMP: withFetch() added to test a suspected WebKit XHR bug that sends
-			// Content-Length: 0 for multipart FormData uploads on iOS Safari.
-			provideHttpClient(withFetch(), withInterceptors([authInterceptor()])),
+		provideHttpClient(withInterceptors([authInterceptor()])),
 		provideAuth({
 			config: {
 				authority: environment.oidc.authority,

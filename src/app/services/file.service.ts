@@ -1,6 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
-import { Observable, concatMap, from, last, map, switchMap, tap } from 'rxjs';
+import {
+	HttpClient,
+	HttpEventType,
+	HttpParams,
+	HttpRequest,
+	HttpResponse,
+} from '@angular/common/http';
+import { Observable, concatMap, filter, from, last, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
@@ -97,34 +103,25 @@ export class FileService {
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
 		const formData = new FormData();
+		formData.append('ownerId', ownerId.toString());
+		if (parentId !== null) {
+			formData.append('parentId', parentId.toString());
+		}
 		formData.append('file', file);
 
-		// TEMP DEBUG: diagnosing mobile "Content-Length: 0" upload issue.
-		console.log('[upload-diag] file', {
-			name: file.name,
-			size: file.size,
-			type: file.type,
-			lastModified: file.lastModified,
+		const req = new HttpRequest('POST', `${this.apiUrl}/upload`, formData, {
+			reportProgress: true,
 		});
-		file
-			.arrayBuffer()
-			.then((buf) => console.log('[upload-diag] arrayBuffer bytes', buf.byteLength))
-			.catch((err) => console.log('[upload-diag] arrayBuffer FAILED', err));
-		for (const [key, value] of formData.entries()) {
-			console.log('[upload-diag] formData entry', key, value);
-		}
 
-		let params = new HttpParams().set('ownerId', ownerId.toString());
-		if (parentId !== null) {
-			params = params.set('parentId', parentId.toString());
-		}
-
-		// TEMP: reverted to the plain http.post() call (pre-March upload-progress
-		// rewrite) to test whether the HttpRequest/events-based API itself is what
-		// triggers the WebKit "Content-Length: 0" bug on iOS Safari. No upload
-		// progress reporting while this is in place.
-		void onProgress;
-		return this.http.post<File>(`${this.apiUrl}/upload`, formData, { params });
+		return this.http.request<File>(req).pipe(
+			tap((event) => {
+				if (event.type === HttpEventType.UploadProgress && event.total != null) {
+					onProgress?.(event.loaded, event.total);
+				}
+			}),
+			filter((e): e is HttpResponse<File> => e.type === HttpEventType.Response),
+			map((e) => e.body!),
+		);
 	}
 
 	private uploadFileChunked(
