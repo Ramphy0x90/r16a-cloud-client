@@ -105,6 +105,21 @@ export class FileService {
 		const formData = new FormData();
 		formData.append('file', file);
 
+		// TEMP DEBUG: diagnosing mobile "Content-Length: 0" upload issue.
+		console.log('[upload-diag] file', {
+			name: file.name,
+			size: file.size,
+			type: file.type,
+			lastModified: file.lastModified,
+		});
+		file
+			.arrayBuffer()
+			.then((buf) => console.log('[upload-diag] arrayBuffer bytes', buf.byteLength))
+			.catch((err) => console.log('[upload-diag] arrayBuffer FAILED', err));
+		for (const [key, value] of formData.entries()) {
+			console.log('[upload-diag] formData entry', key, value);
+		}
+
 		let params = new HttpParams().set('ownerId', ownerId.toString());
 		if (parentId !== null) {
 			params = params.set('parentId', parentId.toString());
