@@ -1,12 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import {
-	HttpClient,
-	HttpEventType,
-	HttpParams,
-	HttpRequest,
-	HttpResponse,
-} from '@angular/common/http';
-import { Observable, concatMap, filter, from, last, map, switchMap, tap } from 'rxjs';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { Observable, concatMap, from, last, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
@@ -125,23 +119,12 @@ export class FileService {
 			params = params.set('parentId', parentId.toString());
 		}
 
-		const req = new HttpRequest('POST', `${this.apiUrl}/upload`, formData, {
-			// TEMP: reportProgress disabled to test a suspected WebKit bug where
-			// XHR upload-progress tracking causes iOS Safari to send Content-Length: 0
-			// for multipart FormData bodies.
-			reportProgress: false,
-			params,
-		});
-
-		return this.http.request<File>(req).pipe(
-			tap((event) => {
-				if (event.type === HttpEventType.UploadProgress && event.total != null) {
-					onProgress?.(event.loaded, event.total);
-				}
-			}),
-			filter((e): e is HttpResponse<File> => e.type === HttpEventType.Response),
-			map((e) => e.body!),
-		);
+		// TEMP: reverted to the plain http.post() call (pre-March upload-progress
+		// rewrite) to test whether the HttpRequest/events-based API itself is what
+		// triggers the WebKit "Content-Length: 0" bug on iOS Safari. No upload
+		// progress reporting while this is in place.
+		void onProgress;
+		return this.http.post<File>(`${this.apiUrl}/upload`, formData, { params });
 	}
 
 	private uploadFileChunked(
