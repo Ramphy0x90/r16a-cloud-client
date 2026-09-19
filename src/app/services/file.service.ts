@@ -1,12 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import {
-	HttpClient,
-	HttpEventType,
-	HttpParams,
-	HttpRequest,
-	HttpResponse,
-} from '@angular/common/http';
-import { Observable, concatMap, filter, from, last, map, switchMap, tap } from 'rxjs';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { Observable, concatMap, from, last, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
 	CreateFileRequest,
@@ -103,25 +97,16 @@ export class FileService {
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
 		const formData = new FormData();
-		formData.append('ownerId', ownerId.toString());
-		if (parentId !== null) {
-			formData.append('parentId', parentId.toString());
-		}
 		formData.append('file', file);
 
-		const req = new HttpRequest('POST', `${this.apiUrl}/upload`, formData, {
-			reportProgress: true,
-		});
+		let params = new HttpParams().set('ownerId', ownerId.toString());
+		if (parentId !== null) {
+			params = params.set('parentId', parentId.toString());
+		}
 
-		return this.http.request<File>(req).pipe(
-			tap((event) => {
-				if (event.type === HttpEventType.UploadProgress && event.total != null) {
-					onProgress?.(event.loaded, event.total);
-				}
-			}),
-			filter((e): e is HttpResponse<File> => e.type === HttpEventType.Response),
-			map((e) => e.body!),
-		);
+		return this.http
+			.post<File>(`${this.apiUrl}/upload`, formData, { params })
+			.pipe(tap(() => onProgress?.(file.size, file.size)));
 	}
 
 	private uploadFileChunked(

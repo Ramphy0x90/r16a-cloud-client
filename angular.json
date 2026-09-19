@@ -69,6 +69,13 @@
 				},
 				"serve": {
 					"builder": "@angular/build:dev-server",
+					"options": {
+						"proxyConfig": "proxy.conf.json",
+						"ssl": true,
+						"sslCert": "192.168.1.107+2.pem",
+						"sslKey": "192.168.1.107+2-key.pem",
+						"host": "0.0.0.0"
+					},
 					"configurations": {
 						"production": {
 							"buildTarget": "r16a-cloud_client:build:production"
