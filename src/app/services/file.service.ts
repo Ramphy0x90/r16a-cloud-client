@@ -97,33 +97,28 @@ export class FileService {
 		file: globalThis.File,
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
-		const formData = new FormData();
-		formData.append('file', file);
-
 		let params = new HttpParams().set('ownerId', ownerId.toString());
 		if (parentId !== null) {
 			params = params.set('parentId', parentId.toString());
 		}
 
-		return from(this.uploadFileMultipartViaFetch(params, formData)).pipe(
-			tap(() => onProgress?.(file.size, file.size)),
-		);
-	}
+		const boundary = `----R16aBoundary${crypto.randomUUID().replace(/-/g, '')}`;
+		const header = [
+			`--${boundary}`,
+			`Content-Disposition: form-data; name="file"; filename="${file.name.replace(/"/g, '\\"')}"`,
+			`Content-Type: ${file.type || 'application/octet-stream'}`,
+			'',
+			'',
+		].join('\r\n');
+		const footer = `\r\n--${boundary}--\r\n`;
+		const body = new Blob([header, file, footer]);
 
-	private async uploadFileMultipartViaFetch(params: HttpParams, formData: FormData): Promise<File> {
-		const token = await firstValueFrom(this.oidc.getAccessToken());
-		const response = await fetch(`${this.apiUrl}/upload?${params.toString()}`, {
-			method: 'POST',
-			headers: { Authorization: `Bearer ${token}` },
-			body: formData,
-		});
-
-		if (!response.ok) {
-			const text = await response.text().catch(() => '');
-			throw new Error(text || `Upload failed with status ${response.status}`);
-		}
-
-		return response.json() as Promise<File>;
+		return this.http
+			.post<File>(`${this.apiUrl}/upload`, body, {
+				params,
+				headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+			})
+			.pipe(tap(() => onProgress?.(file.size, file.size)));
 	}
 
 	private uploadFileChunked(
