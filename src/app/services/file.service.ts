@@ -111,7 +111,10 @@ export class FileService {
 		}
 
 		const req = new HttpRequest('POST', `${this.apiUrl}/upload`, formData, {
-			reportProgress: true,
+			// TEMP: reportProgress disabled to test a suspected WebKit bug where
+			// XHR upload-progress tracking causes iOS Safari to send Content-Length: 0
+			// for multipart FormData bodies.
+			reportProgress: false,
 			params,
 		});
 
