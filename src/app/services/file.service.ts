@@ -86,8 +86,10 @@ export class FileService {
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
 		if (file.size > CHUNK_UPLOAD_THRESHOLD_BYTES) {
+			console.log('Upload chunked');
 			return this.uploadFileChunked(ownerId, parentId, file, onProgress);
 		}
+		console.log('Upload multipart');
 		return this.uploadFileMultipart(ownerId, parentId, file, onProgress);
 	}
 
@@ -103,6 +105,8 @@ export class FileService {
 			formData.append('parentId', parentId.toString());
 		}
 		formData.append('file', file);
+
+		console.log('Form data: ', formData);
 
 		return this.http
 			.post<File>(`${this.apiUrl}/upload`, formData)

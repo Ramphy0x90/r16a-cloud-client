@@ -406,7 +406,9 @@ export class FilesPage implements OnDestroy {
 		if (!input.files?.length) return;
 
 		const files = Array.from(input.files);
+		console.log('FILES: ', files);
 		await this.uploadFiles(files);
+
 		input.value = '';
 	}
 
@@ -833,7 +835,9 @@ export class FilesPage implements OnDestroy {
 			this.breadcrumbs = [];
 			this.selectionMode = false;
 			this.selectedFileIds = new Set();
-			this.store.dispatch(setFileToolbarState({ breadcrumbs: [], selectionMode: false, selectedCount: 0 }));
+			this.store.dispatch(
+				setFileToolbarState({ breadcrumbs: [], selectionMode: false, selectedCount: 0 }),
+			);
 			this.loadSharedFiles();
 		} else {
 			this.requestFilesRefresh();
@@ -846,7 +850,10 @@ export class FilesPage implements OnDestroy {
 		this.cdr.markForCheck();
 		this.fileService
 			.getFilesSharedWithMe(this.sortField, this.sortDirection)
-			.pipe(take(1), catchError(() => of(null)))
+			.pipe(
+				take(1),
+				catchError(() => of(null)),
+			)
 			.subscribe((response) => {
 				this.filesSubject.next(response?.content ?? []);
 				this.loading = false;
