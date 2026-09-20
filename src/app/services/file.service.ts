@@ -97,27 +97,15 @@ export class FileService {
 		file: globalThis.File,
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
-		let params = new HttpParams().set('ownerId', ownerId.toString());
+		const formData = new FormData();
+		formData.append('ownerId', ownerId.toString());
 		if (parentId !== null) {
-			params = params.set('parentId', parentId.toString());
+			formData.append('parentId', parentId.toString());
 		}
-
-		const boundary = `----R16aBoundary${crypto.randomUUID().replace(/-/g, '')}`;
-		const header = [
-			`--${boundary}`,
-			`Content-Disposition: form-data; name="file"; filename="${file.name.replace(/"/g, '\\"')}"`,
-			`Content-Type: ${file.type || 'application/octet-stream'}`,
-			'',
-			'',
-		].join('\r\n');
-		const footer = `\r\n--${boundary}--\r\n`;
-		const body = new Blob([header, file, footer]);
+		formData.append('file', file);
 
 		return this.http
-			.post<File>(`${this.apiUrl}/upload`, body, {
-				params,
-				headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
-			})
+			.post<File>(`${this.apiUrl}/upload`, formData)
 			.pipe(tap(() => onProgress?.(file.size, file.size)));
 	}
 
