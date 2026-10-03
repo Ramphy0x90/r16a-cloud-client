@@ -56,17 +56,6 @@
 						}
 					</select>
 				</div>
-
-				<div class="field-group toggle-group">
-					<div class="toggle-label-group">
-						<span class="toggle-label">Encrypt files by default</span>
-						<span class="toggle-description">Uploaded files will be encrypted automatically</span>
-					</div>
-					<toggle-switch
-						[(ngModel)]="encryptFilesByDefault"
-						(ngModelChange)="schedulePersist()"
-					></toggle-switch>
-				</div>
 			</div>
 
 			@if (errorMessage) {

@@ -6,7 +6,6 @@ import { BehaviorSubject, Observable, Subject, debounceTime, switchMap, takeUnti
 import { UserService } from '../../services/user.service';
 import { setUserPreferences } from '../../store/app/app.actions';
 import { Theme } from '../../types/theme';
-import { ToggleSwitch } from '../../components/toggle-switch/toggle-switch';
 import { ViewMode } from '../../types/file';
 import { UserResponse } from '../../types/user';
 import { getUserInitials } from '../../utils/user-utils';
@@ -15,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
 
 @Component({
 	selector: 'profile-page',
-	imports: [CommonModule, FormsModule, ToggleSwitch, LoadingSpinner],
+	imports: [CommonModule, FormsModule, LoadingSpinner],
 	templateUrl: './profile.html',
 	styleUrl: './profile.css',
 })
@@ -35,7 +34,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 	displayName = '';
 	username = '';
 	preferredTheme: Theme = 'light';
-	encryptFilesByDefault = false;
 	defaultViewMode: ViewMode = 'grid';
 
 	private preferencesHydrated = false;
@@ -92,7 +90,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 		return this.userService.updateCurrentUserPreferences({
 			preferences: {
 				preferredTheme: this.preferredTheme,
-				encryptFilesByDefault: this.encryptFilesByDefault,
 				defaultViewMode: this.defaultViewMode,
 			},
 		});
@@ -102,7 +99,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 		this.displayName = user.displayName;
 		this.username = user.username;
 		this.preferredTheme = user.preferences.preferredTheme;
-		this.encryptFilesByDefault = user.preferences.encryptFilesByDefault;
 		this.defaultViewMode = user.preferences.defaultViewMode;
 		this.preferencesHydrated = true;
 		this.loading$.next(false);

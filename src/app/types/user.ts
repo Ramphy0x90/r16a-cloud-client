@@ -3,7 +3,6 @@ import { Theme } from './theme';
 
 export interface UserPreferences {
 	preferredTheme: Theme;
-	encryptFilesByDefault: boolean;
 	defaultViewMode: ViewMode;
 }
 

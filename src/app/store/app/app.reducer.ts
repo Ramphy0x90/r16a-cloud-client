@@ -9,7 +9,6 @@ export interface AppState {
 export function defaultUserPreferences(): UserPreferences {
 	return {
 		preferredTheme: 'light',
-		encryptFilesByDefault: false,
 		defaultViewMode: 'grid',
 	};
 }

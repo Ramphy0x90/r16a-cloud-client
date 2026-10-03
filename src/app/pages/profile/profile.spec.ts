@@ -19,7 +19,6 @@ describe('ProfilePage', () => {
 		role: 'USER',
 		preferences: {
 			preferredTheme: 'light',
-			encryptFilesByDefault: false,
 			defaultViewMode: 'grid',
 		},
 		createdAt: '2026-01-01T00:00:00.000Z',
@@ -68,7 +67,7 @@ describe('ProfilePage', () => {
 		fixture.detectChanges();
 		await fixture.whenStable();
 
-		expect(component.loading).toBe(false);
+		expect(component.loading$.value).toBe(false);
 
 		component.preferredTheme = 'dark';
 		component.schedulePersist();
@@ -78,8 +77,7 @@ describe('ProfilePage', () => {
 		expect(updateCurrentUserPreferences).toHaveBeenCalledWith({
 			preferences: {
 				preferredTheme: 'dark',
-				encryptFilesByDefault: false,
-				defaultViewMode: 'grid',
+					defaultViewMode: 'grid',
 			},
 		});
 		expect(storeMock.dispatch).toHaveBeenCalled();
