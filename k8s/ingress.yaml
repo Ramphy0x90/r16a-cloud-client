@@ -11,9 +11,20 @@ spec:
   tls:
     - hosts:
         - cloud.r16a.cloud
+        - domovoi.cloud
       secretName: r16a-cloud-tls
   rules:
     - host: cloud.r16a.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: r16a-cloud-client
+                port:
+                  number: 80
+    - host: domovoi.cloud
       http:
         paths:
           - path: /
