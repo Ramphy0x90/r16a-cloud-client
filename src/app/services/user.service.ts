@@ -34,6 +34,11 @@ export class UserService {
 		);
 	}
 
+	/** Erases the caller's account and everything it owns (`DELETE /api/user/me`). */
+	deleteCurrentUser(): Observable<void> {
+		return this.http.delete<void>(`${this.apiUrl}/me`);
+	}
+
 	refreshCurrentUser(): void {
 		this.currentUserRefresh$.next(void 0);
 	}

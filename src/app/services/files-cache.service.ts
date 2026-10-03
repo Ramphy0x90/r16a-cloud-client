@@ -58,6 +58,12 @@ export class FilesCacheService {
 		this.db.deleteByPrefix(this.buildFolderKey(ownerId, parentId));
 	}
 
+	/** Drops every cached listing of [ownerId], memory and IndexedDB (account deletion). */
+	clearOwner(ownerId: string): Promise<void> {
+		this.invalidateAll();
+		return this.db.deleteByPrefix(`${ownerId}::`);
+	}
+
 	invalidateAll(): void {
 		this.entriesByKey.clear();
 		this.keysByFolder.clear();

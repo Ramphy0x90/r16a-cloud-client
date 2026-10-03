@@ -11,6 +11,10 @@ import { UserResponse } from '../../types/user';
 import { getUserInitials } from '../../utils/user-utils';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
 import { AuthService } from '../../services/auth.service';
+import { FilesCacheService } from '../../services/files-cache.service';
+
+/** Typed to confirm account deletion — same word as the mobile app. */
+export const DELETE_CONFIRMATION_WORD = 'DELETE';
 
 @Component({
 	selector: 'profile-page',
@@ -21,6 +25,7 @@ import { AuthService } from '../../services/auth.service';
 export class ProfilePage implements OnInit, OnDestroy {
 	private readonly authService = inject(AuthService);
 	private readonly userService = inject(UserService);
+	private readonly filesCache = inject(FilesCacheService);
 	private readonly store: Store = inject(Store);
 	private readonly persistPreferences$ = new Subject<void>();
 	private readonly destroy$ = new Subject<void>();
@@ -37,6 +42,13 @@ export class ProfilePage implements OnInit, OnDestroy {
 	defaultViewMode: ViewMode = 'grid';
 
 	private preferencesHydrated = false;
+	private userId: string | null = null;
+
+	readonly deleteConfirmationWord = DELETE_CONFIRMATION_WORD;
+	deleteModalOpen = false;
+	deleteConfirmText = '';
+	deleting = false;
+	deleteError: string | null = null;
 
 	get userInitials(): string {
 		return getUserInitials(this.displayName);
@@ -86,6 +98,39 @@ export class ProfilePage implements OnInit, OnDestroy {
 		this.authService.logout();
 	}
 
+	openDeleteAccount(): void {
+		this.deleteConfirmText = '';
+		this.deleteError = null;
+		this.deleteModalOpen = true;
+	}
+
+	closeDeleteAccount(): void {
+		if (this.deleting) return;
+		this.deleteModalOpen = false;
+	}
+
+	get canConfirmDelete(): boolean {
+		return !this.deleting && this.deleteConfirmText.trim() === DELETE_CONFIRMATION_WORD;
+	}
+
+	/** Erases the account server-side, drops its cached listings, then signs out. */
+	confirmDeleteAccount(): void {
+		if (!this.canConfirmDelete) return;
+		this.deleting = true;
+		this.deleteError = null;
+		this.userService.deleteCurrentUser().subscribe({
+			next: async () => {
+				if (this.userId) await this.filesCache.clearOwner(this.userId);
+				// The token must go: using it again would provision a fresh, empty account.
+				this.authService.logout();
+			},
+			error: () => {
+				this.deleting = false;
+				this.deleteError = 'Could not delete your account. Please try again.';
+			},
+		});
+	}
+
 	private saveUserPreferences(): Observable<UserResponse> {
 		return this.userService.updateCurrentUserPreferences({
 			preferences: {
@@ -96,6 +141,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 	}
 
 	private setProfileState(user: UserResponse): void {
+		this.userId = user.id;
 		this.displayName = user.displayName;
 		this.username = user.username;
 		this.preferredTheme = user.preferences.preferredTheme;

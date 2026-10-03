@@ -77,5 +77,70 @@
 				</button>
 			</div>
 		</section>
+
+		<section class="profile-card">
+			<div class="section-header section-header--prefs">
+				<div class="section-header-titles">
+					<h2>Delete account</h2>
+					<p>Permanently erase your account and files</p>
+				</div>
+			</div>
+
+			<div class="action">
+				<button class="delete-account-btn action-btn" (click)="openDeleteAccount()">
+					<i class="bi bi-trash3"></i> <span>Delete account</span>
+				</button>
+			</div>
+		</section>
 	}
 </div>
+
+@if (deleteModalOpen) {
+	<div class="modal-overlay" (click)="closeDeleteAccount()">
+		<div
+			class="modal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="delete-account-title"
+			(click)="$event.stopPropagation()"
+		>
+			<h3 class="modal-title" id="delete-account-title">Delete account?</h3>
+			<p class="modal-text">
+				This permanently deletes your Domovoi account and everything in it: your files, photos
+				and folders, and anything you shared with others. Files other people shared with you
+				stay with them. This can't be undone.
+			</p>
+			<p class="modal-text modal-text--muted">
+				Your invitation sign-in is removed by the administrator.
+			</p>
+			<label class="modal-label" for="delete-account-confirm">
+				Type {{ deleteConfirmationWord }} to confirm
+			</label>
+			<input
+				id="delete-account-confirm"
+				type="text"
+				class="modal-input"
+				autocomplete="off"
+				[(ngModel)]="deleteConfirmText"
+				(keydown.enter)="confirmDeleteAccount()"
+				[disabled]="deleting"
+				autofocus
+			/>
+			@if (deleteError) {
+				<p class="feedback error">{{ deleteError }}</p>
+			}
+			<div class="modal-actions">
+				<button class="modal-btn cancel-btn" (click)="closeDeleteAccount()" [disabled]="deleting">
+					Cancel
+				</button>
+				<button
+					class="modal-btn danger-btn"
+					(click)="confirmDeleteAccount()"
+					[disabled]="!canConfirmDelete"
+				>
+					{{ deleting ? 'Deleting…' : 'Delete account' }}
+				</button>
+			</div>
+		</div>
+	</div>
+}

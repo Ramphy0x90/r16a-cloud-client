@@ -26,15 +26,15 @@ describe('FilesPage', () => {
 		sharedWithIds: [],
 		createdAt: '2026-01-01T00:00:00.000Z',
 		updatedAt: '2026-01-01T00:00:00.000Z',
+		takenAt: null,
+		blurHash: null,
 	};
 
 	const filesResponse: PageResponse<File> = {
 		content: [imageFile],
 		totalElements: 1,
 		totalPages: 1,
-		size: 50,
 		number: 0,
-		first: true,
 		last: true,
 	};
 

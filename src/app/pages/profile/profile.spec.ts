@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngrx/store';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { ProfilePage } from './profile';
+import { AuthService } from '../../services/auth.service';
+import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { UserResponse } from '../../types/user';
 
@@ -26,11 +28,16 @@ describe('ProfilePage', () => {
 	};
 
 	const updateCurrentUserPreferences = vi.fn(() => of(mockUser));
+	const deleteCurrentUser = vi.fn(() => of(undefined as void));
 
 	const userServiceMock = {
 		currentUser$: of(mockUser),
 		updateCurrentUserPreferences,
+		deleteCurrentUser,
 	};
+
+	const authServiceMock = { logout: vi.fn() };
+	const filesCacheMock = { clearOwner: vi.fn(() => Promise.resolve()) };
 
 	const storeMock = {
 		dispatch: vi.fn(),
@@ -44,6 +51,8 @@ describe('ProfilePage', () => {
 			imports: [ProfilePage],
 			providers: [
 				{ provide: UserService, useValue: userServiceMock },
+				{ provide: AuthService, useValue: authServiceMock },
+				{ provide: FilesCacheService, useValue: filesCacheMock },
 				{ provide: Store, useValue: storeMock },
 			],
 		}).compileComponents();
@@ -81,5 +90,43 @@ describe('ProfilePage', () => {
 			},
 		});
 		expect(storeMock.dispatch).toHaveBeenCalled();
+	});
+
+	describe('delete account', () => {
+		beforeEach(async () => {
+			fixture.detectChanges();
+			await fixture.whenStable();
+			component.openDeleteAccount();
+		});
+
+		it('only confirms once the exact word is typed', () => {
+			expect(component.canConfirmDelete).toBe(false);
+			component.deleteConfirmText = 'delete';
+			expect(component.canConfirmDelete).toBe(false);
+			component.deleteConfirmText = 'DELETE';
+			expect(component.canConfirmDelete).toBe(true);
+		});
+
+		it('deletes, clears cached listings, then signs out', async () => {
+			component.deleteConfirmText = 'DELETE';
+
+			component.confirmDeleteAccount();
+			await fixture.whenStable();
+
+			expect(deleteCurrentUser).toHaveBeenCalledTimes(1);
+			expect(filesCacheMock.clearOwner).toHaveBeenCalledWith('user-1');
+			expect(authServiceMock.logout).toHaveBeenCalledTimes(1);
+		});
+
+		it('reports a failure and stays signed in', () => {
+			deleteCurrentUser.mockReturnValueOnce(throwError(() => new Error('offline')));
+			component.deleteConfirmText = 'DELETE';
+
+			component.confirmDeleteAccount();
+
+			expect(component.deleteError).toBe('Could not delete your account. Please try again.');
+			expect(component.deleting).toBe(false);
+			expect(authServiceMock.logout).not.toHaveBeenCalled();
+		});
 	});
 });

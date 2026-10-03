@@ -171,3 +171,116 @@
 .feedback.error {
 	color: var(--colour-alert);
 }
+
+/* Delete account */
+
+.delete-account-btn {
+	background-color: transparent;
+	color: var(--colour-alert);
+	border: 1px solid var(--colour-alert);
+	gap: var(--space-1);
+	padding: var(--space-1) var(--space-3);
+}
+
+/* Confirmation modal (same look as the Files page modals) */
+
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: var(--space-3);
+}
+
+.modal {
+	background-color: var(--colour-background);
+	border: 1px solid var(--colour-card);
+	border-radius: var(--radius);
+	padding: var(--space-4);
+	width: 100%;
+	max-width: 400px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.modal-title {
+	font-size: 1.1rem;
+	font-weight: 600;
+	margin: 0;
+}
+
+.modal-text {
+	margin: 0;
+	opacity: 0.7;
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.modal-text--muted {
+	font-size: 0.8rem;
+	opacity: 0.55;
+}
+
+.modal-label {
+	font-size: 0.875rem;
+	opacity: 0.65;
+	margin-bottom: calc(-1 * var(--space-2));
+}
+
+.modal-input {
+	width: 100%;
+	padding: var(--space-2);
+	border: 1px solid var(--colour-accent);
+	border-radius: var(--radius);
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+	font-size: 0.9rem;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.modal-input:focus {
+	border-color: var(--colour-primary);
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-2);
+}
+
+.modal-btn {
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius);
+	border: none;
+	cursor: pointer;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.modal-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.cancel-btn {
+	background-color: var(--colour-card);
+	color: var(--colour-foreground);
+}
+
+.cancel-btn:hover {
+	background-color: var(--colour-card-hover);
+}
+
+.danger-btn {
+	background-color: var(--colour-alert);
+	color: #fff;
+}
+
+.danger-btn:hover {
+	opacity: 0.85;
+}
