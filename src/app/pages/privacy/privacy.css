@@ -1,0 +1,65 @@
+:host {
+	display: block;
+	overflow-y: auto;
+	height: 100%;
+}
+
+.privacy {
+	max-width: 760px;
+	margin: var(--space-3) auto;
+	/* Readable over the signed-out background image. */
+	background-color: var(--colour-background);
+	border-radius: var(--radius);
+	padding: var(--space-4) var(--space-3) calc(var(--space-4) * 3);
+	color: var(--colour-foreground);
+	line-height: 1.6;
+}
+
+.draft-notice {
+	margin-bottom: var(--space-3);
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--colour-alert);
+	border-radius: var(--radius);
+	font-size: 0.9rem;
+}
+
+h1 {
+	margin: 0;
+	font-size: 1.8rem;
+}
+
+.meta {
+	margin: var(--space-1) 0 var(--space-3);
+	opacity: 0.6;
+	font-size: 0.875rem;
+}
+
+h2 {
+	margin: var(--space-4) 0 var(--space-2);
+	font-size: 1.2rem;
+}
+
+h3 {
+	margin: var(--space-3) 0 var(--space-1);
+	font-size: 1rem;
+}
+
+p,
+li {
+	font-size: 0.95rem;
+}
+
+ul {
+	padding-left: var(--space-4);
+}
+
+address {
+	font-style: normal;
+	margin: var(--space-2) 0;
+	padding-left: var(--space-3);
+	border-left: 2px solid var(--colour-primary);
+}
+
+a {
+	color: var(--colour-primary);
+}

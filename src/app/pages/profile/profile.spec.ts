@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngrx/store';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { ProfilePage } from './profile';
 import { AuthService } from '../../services/auth.service';
-import { FilesCacheService } from '../../services/files-cache.service';
 import { UserService } from '../../services/user.service';
 import { UserResponse } from '../../types/user';
 
@@ -37,7 +37,6 @@ describe('ProfilePage', () => {
 	};
 
 	const authServiceMock = { logout: vi.fn() };
-	const filesCacheMock = { clearOwner: vi.fn(() => Promise.resolve()) };
 
 	const storeMock = {
 		dispatch: vi.fn(),
@@ -50,9 +49,9 @@ describe('ProfilePage', () => {
 		await TestBed.configureTestingModule({
 			imports: [ProfilePage],
 			providers: [
+				provideRouter([]),
 				{ provide: UserService, useValue: userServiceMock },
 				{ provide: AuthService, useValue: authServiceMock },
-				{ provide: FilesCacheService, useValue: filesCacheMock },
 				{ provide: Store, useValue: storeMock },
 			],
 		}).compileComponents();
@@ -92,6 +91,16 @@ describe('ProfilePage', () => {
 		expect(storeMock.dispatch).toHaveBeenCalled();
 	});
 
+	it('links to the privacy policy', async () => {
+		fixture.detectChanges();
+		await fixture.whenStable();
+		fixture.detectChanges();
+
+		const link = (fixture.nativeElement as HTMLElement).querySelector('.legal-links a');
+		expect(link?.textContent).toContain('Privacy policy');
+		expect(link?.getAttribute('href')).toBe('/privacy');
+	});
+
 	describe('delete account', () => {
 		beforeEach(async () => {
 			fixture.detectChanges();
@@ -107,14 +116,13 @@ describe('ProfilePage', () => {
 			expect(component.canConfirmDelete).toBe(true);
 		});
 
-		it('deletes, clears cached listings, then signs out', async () => {
+		it('deletes, then signs out', async () => {
 			component.deleteConfirmText = 'DELETE';
 
 			component.confirmDeleteAccount();
 			await fixture.whenStable();
 
 			expect(deleteCurrentUser).toHaveBeenCalledTimes(1);
-			expect(filesCacheMock.clearOwner).toHaveBeenCalledWith('user-1');
 			expect(authServiceMock.logout).toHaveBeenCalledTimes(1);
 		});
 

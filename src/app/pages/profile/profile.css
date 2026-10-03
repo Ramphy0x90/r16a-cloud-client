@@ -172,6 +172,18 @@
 	color: var(--colour-alert);
 }
 
+/* Footer link (same as the app's Profile) */
+
+.legal-links {
+	margin: 0;
+	text-align: center;
+	font-size: 0.875rem;
+}
+
+.legal-links a {
+	color: var(--colour-primary);
+}
+
 /* Delete account */
 
 .delete-account-btn {

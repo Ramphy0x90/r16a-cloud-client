@@ -14,6 +14,7 @@ import {
 	Subject,
 	takeUntil,
 } from 'rxjs';
+import { PUBLIC_PATHS } from './app.routes';
 import { Theme } from './types/theme';
 import { selectTheme } from './store/app/app.selector';
 import { AuthService } from './services/auth.service';
@@ -44,6 +45,7 @@ export class App implements OnInit, OnDestroy {
 	/**
 	 * Full-screen overlay while unauthenticated: OIDC `authorize()` runs from the route guard.
 	 * Hides the app chrome so users do not briefly see the shell before the IdP redirect.
+	 * Public pages (callback, privacy policy) are left visible.
 	 */
 	readonly showRedirectOverlay$: Observable<boolean> = combineLatest([
 		this.auth.isAuthenticated$,
@@ -55,7 +57,7 @@ export class App implements OnInit, OnDestroy {
 			),
 		),
 	]).pipe(
-		map(([auth, url]) => !auth && !url.includes('/callback')),
+		map(([auth, url]) => !auth && !PUBLIC_PATHS.some((path) => url.startsWith(path))),
 		distinctUntilChanged(),
 	);
 

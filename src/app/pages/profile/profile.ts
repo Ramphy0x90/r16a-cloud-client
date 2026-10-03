@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, Subject, debounceTime, switchMap, takeUntil } from 'rxjs';
 import { UserService } from '../../services/user.service';
@@ -11,21 +12,19 @@ import { UserResponse } from '../../types/user';
 import { getUserInitials } from '../../utils/user-utils';
 import { LoadingSpinner } from '../../components/loading-spinner/loading-spinner';
 import { AuthService } from '../../services/auth.service';
-import { FilesCacheService } from '../../services/files-cache.service';
 
 /** Typed to confirm account deletion — same word as the mobile app. */
 export const DELETE_CONFIRMATION_WORD = 'DELETE';
 
 @Component({
 	selector: 'profile-page',
-	imports: [CommonModule, FormsModule, LoadingSpinner],
+	imports: [CommonModule, FormsModule, RouterLink, LoadingSpinner],
 	templateUrl: './profile.html',
 	styleUrl: './profile.css',
 })
 export class ProfilePage implements OnInit, OnDestroy {
 	private readonly authService = inject(AuthService);
 	private readonly userService = inject(UserService);
-	private readonly filesCache = inject(FilesCacheService);
 	private readonly store: Store = inject(Store);
 	private readonly persistPreferences$ = new Subject<void>();
 	private readonly destroy$ = new Subject<void>();
@@ -42,7 +41,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 	defaultViewMode: ViewMode = 'grid';
 
 	private preferencesHydrated = false;
-	private userId: string | null = null;
 
 	readonly deleteConfirmationWord = DELETE_CONFIRMATION_WORD;
 	deleteModalOpen = false;
@@ -113,16 +111,15 @@ export class ProfilePage implements OnInit, OnDestroy {
 		return !this.deleting && this.deleteConfirmText.trim() === DELETE_CONFIRMATION_WORD;
 	}
 
-	/** Erases the account server-side, drops its cached listings, then signs out. */
+	/** Erases the account server-side, then signs out (which also clears local caches). */
 	confirmDeleteAccount(): void {
 		if (!this.canConfirmDelete) return;
 		this.deleting = true;
 		this.deleteError = null;
 		this.userService.deleteCurrentUser().subscribe({
-			next: async () => {
-				if (this.userId) await this.filesCache.clearOwner(this.userId);
+			next: () => {
 				// The token must go: using it again would provision a fresh, empty account.
-				this.authService.logout();
+				void this.authService.logout();
 			},
 			error: () => {
 				this.deleting = false;
@@ -141,7 +138,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 	}
 
 	private setProfileState(user: UserResponse): void {
-		this.userId = user.id;
 		this.displayName = user.displayName;
 		this.username = user.username;
 		this.preferredTheme = user.preferences.preferredTheme;

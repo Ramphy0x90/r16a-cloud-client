@@ -4,6 +4,7 @@ import { FilesPage } from './pages/files/files';
 import { PhotosPage } from './pages/photos/photos';
 import { ProfilePage } from './pages/profile/profile';
 import { CallbackPage } from './pages/callback/callback';
+import { PrivacyPage } from './pages/privacy/privacy';
 import { authGuard } from './guards/auth.guard';
 import { NavBarItem } from './types/nav-bar-item';
 
@@ -13,7 +14,11 @@ export const enum ROUTES {
 	PHOTOS = 'photos',
 	PROFILE = 'profile',
 	CALLBACK = 'callback',
+	PRIVACY = 'privacy',
 }
+
+/** Pages anyone can open without signing in. */
+export const PUBLIC_PATHS: readonly string[] = [`/${ROUTES.CALLBACK}`, `/${ROUTES.PRIVACY}`];
 
 export const NAV_BAR_ROUTES: readonly NavBarItem[] = [
 	{
@@ -43,6 +48,8 @@ export const NAV_BAR_ROUTES: readonly NavBarItem[] = [
 
 export const routes: Routes = [
 	{ path: ROUTES.CALLBACK, component: CallbackPage },
+	// Public: the app stores require a privacy policy URL reachable without an account.
+	{ path: ROUTES.PRIVACY, component: PrivacyPage },
 	{ path: '', pathMatch: 'full', redirectTo: ROUTES.DASHBOARD },
 	{ path: ROUTES.DASHBOARD, component: DashboardPage, canActivate: [authGuard] },
 	{ path: ROUTES.FILES, component: FilesPage, canActivate: [authGuard] },
