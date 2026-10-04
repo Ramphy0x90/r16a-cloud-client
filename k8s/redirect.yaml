@@ -1,0 +1,56 @@
+# Redirects the old web address to the official one:
+#   https://cloud.r16a.cloud/<path>  →  https://domovoi.cloud/<path>  (301)
+#
+# /api is NOT redirected: the backend ingress (r16a-cloud/k8s/ingress.yaml)
+# serves cloud.r16a.cloud/api and Traefik prefers its longer path. The mobile
+# app calls that API directly — a redirect would break writes, drop the
+# Authorization header and route app traffic through Cloudflare.
+#
+# Requires Traefik >= 2.10 (traefik.io API group). On older Traefik use
+# apiVersion traefik.containo.us/v1alpha1. Check with:
+#   kubectl api-resources | grep -i middleware
+#
+# Verify after applying:
+#   curl -I https://cloud.r16a.cloud/files          → 301, location https://domovoi.cloud/files
+#   curl -I https://cloud.r16a.cloud/api/user/me    → 401 from the backend (no redirect)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-domovoi
+  namespace: r16a-cloud
+spec:
+  redirectRegex:
+    regex: ^https?://cloud\.r16a\.cloud/(.*)
+    replacement: https://domovoi.cloud/${1}
+    permanent: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloud-r16a-redirect
+  namespace: r16a-cloud
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # <namespace>-<middleware name>@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: r16a-cloud-redirect-to-domovoi@kubernetescrd
+    # No cert-manager annotation on purpose: r16a-cloud-tls is requested by
+    # the backend ingress and already covers cloud.r16a.cloud.
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - cloud.r16a.cloud
+      secretName: r16a-cloud-tls
+  rules:
+    - host: cloud.r16a.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              # Required by the Ingress spec but never reached: the
+              # middleware answers with the redirect first.
+              service:
+                name: r16a-cloud-client
+                port:
+                  number: 80
