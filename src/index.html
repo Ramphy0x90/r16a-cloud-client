@@ -2,15 +2,32 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<title>R16a Cloud</title>
+		<title>Domovoi</title>
 		<base href="/" />
 
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Domovoi" />
+		<meta name="application-name" content="Domovoi" />
 
-		<link rel="icon" type="image/x-icon" href="favicon.ico" />
-		<link rel="manifest" href="manifest.webmanifest" />
+		<!-- The mark in the colour that suits the browser's own light/dark UI. -->
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href="assets/imgs/domovoy-logo-light.svg"
+			media="(prefers-color-scheme: light)"
+		/>
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href="assets/imgs/domovoy-logo-dark.svg"
+			media="(prefers-color-scheme: dark)"
+		/>
+		<!-- Transparent PNG fallback; the icons/icon-* files are opaque app icons for PWA installs. -->
+		<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png" />
+		<link rel="apple-touch-icon" href="icons/icon-192x192.png" />
 		<link rel="manifest" href="manifest.webmanifest" />
 	</head>
 	<body>

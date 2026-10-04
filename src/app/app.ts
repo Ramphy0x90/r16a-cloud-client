@@ -30,7 +30,7 @@ import { LoadingSpinner } from './components/loading-spinner/loading-spinner';
 	styleUrl: './app.css',
 })
 export class App implements OnInit, OnDestroy {
-	protected readonly title = signal('R16a Cloud');
+	protected readonly title = signal('Domovoi');
 	readonly menuOpen = signal(false);
 
 	private readonly store: Store = inject(Store);

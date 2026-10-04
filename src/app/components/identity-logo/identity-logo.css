@@ -1,4 +1,27 @@
 .identity-logo-container {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.logo {
+	flex-shrink: 0;
+}
+
+/* The app theme is a class on <body>; light is the default. */
+.logo--dark {
+	display: none;
+}
+
+:host-context(.dark-theme) .logo--light {
+	display: none;
+}
+
+:host-context(.dark-theme) .logo--dark {
+	display: inline;
+}
+
+.wordmark {
 	font-size: 18px;
 	font-family: 'Sixtyfour', sans-serif;
 	background: linear-gradient(to top, var(--colour-primary), var(--colour-foreground));
