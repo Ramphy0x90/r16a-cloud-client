@@ -406,7 +406,6 @@ export class FilesPage implements OnDestroy {
 		if (!input.files?.length) return;
 
 		const files = Array.from(input.files);
-		console.log('FILES: ', files);
 		await this.uploadFiles(files);
 
 		input.value = '';

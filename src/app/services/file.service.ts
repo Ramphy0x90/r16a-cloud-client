@@ -86,10 +86,8 @@ export class FileService {
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
 		if (file.size > CHUNK_UPLOAD_THRESHOLD_BYTES) {
-			console.log('Upload chunked');
 			return this.uploadFileChunked(ownerId, parentId, file, onProgress);
 		}
-		console.log('Upload multipart');
 		return this.uploadFileMultipart(ownerId, parentId, file, onProgress);
 	}
 
@@ -99,36 +97,12 @@ export class FileService {
 		file: globalThis.File,
 		onProgress?: (loaded: number, total: number) => void,
 	): Observable<File> {
-		console.log(
-			'file.size =',
-			file.size,
-			'file.type =',
-			file.type,
-			'file.name =',
-			file.name,
-			'instanceof File =',
-			file instanceof globalThis.File,
-			'instanceof Blob =',
-			file instanceof Blob,
-		);
-
 		const formData = new FormData();
 		formData.append('ownerId', ownerId.toString());
 		if (parentId !== null) {
 			formData.append('parentId', parentId.toString());
 		}
 		formData.append('file', file);
-
-		const uploadedEntry = formData.get('file');
-		const uploadedFile = uploadedEntry instanceof Blob ? uploadedEntry : null;
-		console.log(
-			'formData.get(file) instanceof Blob =',
-			uploadedEntry instanceof Blob,
-			'uploadedFile.size =',
-			uploadedFile?.size,
-			'uploadedFile.type =',
-			uploadedFile?.type,
-		);
 
 		return this.http
 			.post<File>(`${this.apiUrl}/upload`, formData)
